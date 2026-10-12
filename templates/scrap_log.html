@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap & Damage Log - Mohata Coal Co.</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body, html { height: 100%; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9;}
+        .sidebar { height: 100vh; width: 250px; background: #2c3e50; position: fixed; left: 0; top: 0; z-index: 1001; transition: 0.3s ease; }
+        .main-content { margin-left: 250px; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; transition: 0.3s ease;}
+        
+        .mobile-menu-btn { display: none; font-size: 24px; background: none; border: none; cursor: pointer; color: #2c3e50; padding: 0; margin-right: 15px; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: white; border-bottom: 1px solid #dee2e6;}
+        header h1 { margin: 0; font-size: 22px; color: #2c3e50; display: flex; align-items: center;}
+        
+        /* Profile Dropdown Styles */
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .user-welcome { display: flex; align-items: center; position: relative; }
+        .profile-dropdown { position: relative; display: inline-block; }
+        .profile-btn { background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; text-align: left; top: 100%; margin-top: 5px;}
+        .dropdown-content .profile-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; color: #2c3e50; font-size: 13px; }
+        .dropdown-content a, .dropdown-content button { color: #333; padding: 10px 15px; text-decoration: none; display: block; width: 100%; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; }
+        .dropdown-content a:hover, .dropdown-content button:hover { background-color: #f1f1f1; color: #e74c3c; }
+        .profile-dropdown.active .dropdown-content { display: block; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 100%; max-width: 400px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; }
+        .modal-actions button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: white; font-weight: bold;}
+        .btn-cancel { background: #95a5a6; color: white !important; }
+        .btn-add-user { background: #27ae60; padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-submit { background: #2c3e50; }
+
+        .tabs { display: flex; border-bottom: 2px solid #ddd; padding: 10px 20px 0 20px; background: white; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; font-size: 14px; font-weight: bold; color: #7f8c8d; border-bottom: 3px solid transparent; white-space: nowrap; flex-shrink: 0;}
+        .tab-btn.active { color: #2c3e50; border-bottom: 3px solid #e74c3c; }
+        
+        .filter-controls { display: flex; gap: 15px; padding: 15px 20px; background: white; border-bottom: 1px solid #dee2e6; margin-bottom: 20px; align-items: center;}
+        .filter-controls input { padding: 10px 15px; width: 350px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .filter-controls select { padding: 10px 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; font-weight: bold; color: #2c3e50; cursor: pointer;}
+        
+        .tab-content { display: none; padding: 0 20px; }
+        .tab-content.active { display: block; }
+        
+        .table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); margin-bottom: 20px; width: 100%;}
+        .table-clean { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .table-clean th { background: #f8f9fa; padding: 15px; border-bottom: 2px solid #dee2e6; color: #495057; font-size: 12px; text-transform: uppercase; text-align: left; }
+        .table-clean td { padding: 15px; border-bottom: 1px solid #e9ecef; font-size: 13px; color: #333; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; white-space: normal; }
+        .badge-damage { background: #fdebd0; color: #d35400; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #fad7a1; }
+        .badge-stage { background: #eef2f7; color: #2c3e50; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #d5e1ed; }
+        .weight-text { color: #c0392b; font-weight: bold; font-size: 15px; }
+
+        /* Dashboard Cards */
+        .dash-cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
+        .card { flex: 1; padding: 20px; border-radius: 8px; min-width: 200px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .card-title { font-size: 12px; color: #7f8c8d; font-weight: bold; text-transform: uppercase; margin-bottom: 5px; }
+        .card-value { font-size: 26px; font-weight: 900; }
+        .card-unit { font-size: 14px; font-weight: normal; color: #666;}
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: inline-block; }
+            .sidebar { left: -250px; position: fixed; z-index: 1001; transition: 0.3s; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; }
+            header { flex-direction: column; align-items: flex-start; gap: 15px; padding: 15px; }
+            .header-right { width: 100%; justify-content: space-between; }
+            .tabs { overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; border-bottom: none;}
+            .filter-controls { flex-direction: column; align-items: stretch; }
+            .filter-controls input, .filter-controls select { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="company-logo" style="padding: 20px; color: white;"><h2>Admin Panel</h2></div>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+            <li><a href="/" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Dashboard</a></li>
+            <li><a href="/client_supply" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">RM Input</a></li>
+            <li><a href="/purchase" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Purchase & Assets</a></li>
+            
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/expenses" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Expenses & Analytics</a></li>
+            {% endif %}
+            
+            <li><a href="/workers" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Workers</a></li>
+            <li><a href="/production" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Production Workflow</a></li>
+            
+            {% if 'Admin' in session.get('role', '') or 'Store Manager' in session.get('role', '') %}
+            <li style="background: #34495e;"><a href="/scrap_log" style="color: white; text-decoration: none; padding: 15px 20px; display: block; border-left: 4px solid #e74c3c;">Scrap Log</a></li>
+            {% endif %}
+            
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/audit_log" style="color: white; text-decoration: none; padding: 15px 20px; display: block;">Audit & Traceability</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <header>
+            <h1>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                Scrap & Damage Log
+            </h1>
+            <div class="header-right">
+                <a href="/production" style="background: #e74c3c; color: white; padding: 8px 15px; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold;">Back to Production</a>
+                <div class="user-welcome">
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('username') }} ▾</button>
+                        <div class="dropdown-content">
+                            <div class="profile-header">Role: {{ session.get('role') }}</div>
+                            {% if 'Admin' in session.get('role', '') %}
+                            <button onclick="openUsersModal()">Manage Users</button>
+                            {% endif %}
+                            <button onclick="openPasswordModal()">Reset Password</button>
+                            <a href="{{ url_for('auth.logout') }}">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+                <div style="margin: 15px 20px 0 20px; padding: 10px; border-radius: 4px; font-size: 13px; {% if category == 'error' %}background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;{% else %}background: #d4edda; color: #155724; border: 1px solid #c3e6cb;{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('ScrapSales', this)">Scrap Inventory & Sales</button>
+            <button class="tab-btn" onclick="openTab('WorkerStats', this)">Worker Performance</button>
+            <button class="tab-btn" onclick="openTab('BatchStats', this)">Batch-wise Scrap</button>
+            <button class="tab-btn" onclick="openTab('AllScraps', this)">Detailed Scrap Logs</button>
+            <button class="tab-btn" onclick="openTab('DamagedAxles', this)">Damaged Axles</button>
+        </div>
+        
+        <div class="filter-controls">
+            <input type="text" id="searchInput" placeholder="🔍 Search Worker, Batch No, Axle No..." onkeyup="applyFilters()">
+            <select id="sortSelect" onchange="applyFilters()">
+                <option value="high_scrap">Sort: Top Scrap (High to Low)</option>
+                <option value="low_scrap">Sort: Low Scrap (Low to High)</option>
+                <option value="high_incidents">Sort: Most Incidents</option>
+                <option value="low_incidents">Sort: Least Incidents</option>
+            </select>
+        </div>
+
+        <div id="ScrapSales" class="tab-content active">
+            <div class="dash-cards">
+                <div class="card" style="background: #ebf5fb; border-left: 5px solid #2980b9;">
+                    <div class="card-title">Total Scrap Generated</div>
+                    <div class="card-value" style="color: #2c3e50;">{{ total_scrap_generated }} <span class="card-unit">kg</span></div>
+                </div>
+                <div class="card" style="background: #e8f8f5; border-left: 5px solid #27ae60;">
+                    <div class="card-title">Total Scrap Sold</div>
+                    <div class="card-value" style="color: #27ae60;">{{ total_scrap_sold }} <span class="card-unit">kg</span></div>
+                </div>
+                <div class="card" style="background: #fdf2e9; border-left: 5px solid #e67e22;">
+                    <div class="card-title">Current Available Balance</div>
+                    <div class="card-value" style="color: #d35400;">{{ current_scrap_balance }} <span class="card-unit">kg</span></div>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin: 0; color: #2c3e50;">Scrap Sales History & Invoices</h3>
+                
+                <!-- ONLY ADMIN CAN SELL SCRAP. STORE MANAGER CAN ONLY VIEW. -->
+                {% if 'Admin' in session.get('role', '') %}
+                <button onclick="openSellScrapModal()" style="background: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🛒 Sell Scrap Material</button>
+                {% else %}
+                <span style="font-size: 13px; font-weight: bold; color: #7f8c8d; font-style: italic;">View Only</span>
+                {% endif %}
+            </div>
+
+            <div class="table-container">
+                <table class="table-clean">
+                    <thead>
+                        <tr>
+                            <th>Date & Invoice</th>
+                            <th>Buyer Details</th>
+                            <th>Quantity</th>
+                            <th>Rate</th>
+                            <th>Total Amount</th>
+                            <th style="text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in sales_history %}
+                        <tr class="data-row" data-weight="{{ sale.quantity }}" data-incidents="1">
+                            <td>
+                                <strong>{{ sale.sale_date }}</strong><br>
+                                <span style="font-size: 11px; color: #7f8c8d;">Inv: {{ sale.invoice_no }}</span>
+                            </td>
+                            <td>
+                                <strong style="color: #2c3e50;">{{ sale.buyer_name }}</strong><br>
+                                <span style="font-size: 11px; color: #7f8c8d;">{{ sale.remarks }}</span>
+                            </td>
+                            <td style="color: #c0392b; font-weight: bold;">{{ sale.quantity }} kg</td>
+                            <td>₹{{ sale.rate }}</td>
+                            <td style="color: #27ae60; font-weight: bold; font-size: 15px;">₹{{ sale.total_amount }}</td>
+                            <td style="text-align: center;">
+                                <!-- ADMIN CAN PRINT INVOICE, STORE MANAGER CAN ONLY VIEW TABLE -->
+                                {% if 'Admin' in session.get('role', '') %}
+                                <button onclick="printScrapInvoice('{{ sale.invoice_no }}', '{{ sale.sale_date }}', '{{ sale.buyer_name }}', '{{ sale.quantity }}', '{{ sale.rate }}', '{{ sale.total_amount }}', '{{ sale.remarks }}')" style="background: #34495e; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer;">🖨️ Print Invoice</button>
+                                {% else %}
+                                <span style="font-size: 11px; color: #95a5a6;">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="text-align: center; padding: 30px; color: #7f8c8d;">No scrap sales recorded yet.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="WorkerStats" class="tab-content">
+            <div class="table-container">
+                <table class="table-clean">
+                    <thead>
+                        <tr><th>Worker Name (ID)</th><th>Total Incidents</th><th>Total Scrap Generated</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for w_name, data in worker_stats %}
+                        <tr class="data-row" data-weight="{{ data.total_weight }}" data-incidents="{{ data.incidents }}">
+                            <td><strong>👤 {{ w_name }}</strong></td>
+                            <td>{{ data.incidents }} times</td>
+                            <td class="weight-text">{{ data.total_weight }} kg</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="text-align: center; padding: 20px; color: #7f8c8d;">No scrap records found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="BatchStats" class="tab-content">
+            <div class="table-container">
+                <table class="table-clean">
+                    <thead>
+                        <tr><th>Batch Number</th><th>Scrap Events</th><th>Total Material Loss</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for b_no, data in batch_stats %}
+                        <tr class="data-row" data-weight="{{ data.total_weight }}" data-incidents="{{ data.incidents }}">
+                            <td><strong>📦 {{ b_no }}</strong></td>
+                            <td>{{ data.incidents }} events</td>
+                            <td class="weight-text">{{ data.total_weight }} kg</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3" style="text-align: center; padding: 20px; color: #7f8c8d;">No scrap records found.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="AllScraps" class="tab-content">
+            <div class="table-container">
+                <table class="table-clean">
+                    <thead>
+                        <tr><th>Date & Time</th><th>Batch & Axle No</th><th>Stage</th><th>Weight / Reason</th><th>Done By</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for s in all_scraps %}
+                        <tr class="data-row" data-weight="{{ s.extracted_weight }}" data-incidents="1">
+                            <td style="color: #7f8c8d; font-size: 11px;">{{ s.timestamp }}</td>
+                            <td><strong>{{ s.batch_number }}</strong><br><span style="color: #2980b9;">Axle: {{ s.axle_no }}</span></td>
+                            <td><span class="badge-stage">{{ s.stage_name }}</span></td>
+                            <td style="color: #c0392b; font-weight: bold;">{{ s.reason }}</td>
+                            <td><strong>{{ s.done_by }}</strong></td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No detailed logs available.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="DamagedAxles" class="tab-content">
+            <div class="table-container">
+                <table class="table-clean">
+                    <thead>
+                        <tr><th>Client Info</th><th>Batch No</th><th>Axle No</th><th>Failed Stage</th><th>Damage Reason</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for p in damaged_pieces %}
+                            <tr class="data-row" data-weight="0" data-incidents="1">
+                            <td><strong>{{ p.client_name }}</strong></td>
+                            <td><strong>{{ p.batch_number }}</strong></td>
+                            <td><strong style="color: #e74c3c; font-size: 14px;">{{ p.axle_no }}</strong></td>
+                            <td>
+                                <span class="badge-damage">{{ p.axle_current_stage }}</span>
+                                <div style="font-size: 11px; color: #7f8c8d; margin-top: 4px; font-weight: bold;">👤 {{ p.damaged_by or 'Unknown' }}</div>
+                            </td>
+                            <td style="color: #7f8c8d;">{{ p.reject_reason or 'No reason provided' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="5" style="text-align: center; padding: 20px; color: #7f8c8d;">No damaged axles in production.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Sell Scrap Modal -->
+    <div id="sellScrapModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="color: #e74c3c; border-bottom: 2px solid #fadbd8;">🛒 Sell Scrap Material</h3>
+            <div style="background: #fdf2e9; border: 1px solid #f8c471; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: bold; color: #d35400; margin-bottom: 15px; text-align: center;">
+                Inventory Balance: <span id="maxScrapBalance">{{ current_scrap_balance }}</span> kg available for sale.
+            </div>
+            <form action="/scrap_log" method="POST" onsubmit="return validateScrapSale()">
+                <input type="hidden" name="action" value="sell_scrap">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Sale Date</label>
+                        <input type="date" name="sale_date" required>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Invoice / Challan No</label>
+                        <input type="text" name="invoice_no" required placeholder="e.g. SCR-001">
+                    </div>
+                </div>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Buyer / Party Name</label>
+                <input type="text" name="buyer_name" required placeholder="Enter buyer or company name...">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #e74c3c;">Quantity Sold (kg)</label>
+                        <input type="number" step="0.01" name="quantity" id="sellQty" required placeholder="0.00" oninput="calculateScrapTotal()">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Rate per kg (₹)</label>
+                        <input type="number" step="0.01" name="rate" id="sellRate" required placeholder="0.00" oninput="calculateScrapTotal()">
+                    </div>
+                </div>
+                <div style="background: #e8f8f5; padding: 15px; border-radius: 4px; border: 1px solid #a3e4d7; margin-bottom: 15px; text-align: right;">
+                    <span style="font-size: 12px; color: #7f8c8d; font-weight: bold; text-transform: uppercase;">Total Sales Amount</span>
+                    <div style="font-size: 28px; font-weight: bold; color: #27ae60;">₹ <span id="sellTotalAmount">0.00</span></div>
+                </div>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Vehicle No / Remarks (Optional)</label>
+                <input type="text" name="remarks" placeholder="Enter vehicle no or transport details...">
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeSellScrapModal()">Cancel</button>
+                    <button type="submit" style="background: #e74c3c;">Confirm & Save Sale</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Print Invoice Modal -->
+    <div id="invoiceModal" class="modal">
+        <div class="modal-content" style="max-width: 650px; padding: 0; overflow: hidden; z-index: 3000;">
+            <div style="background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; border: none; color: white; padding: 0;">📄 Scrap Sale Invoice</h3>
+                <button onclick="closeInvoiceModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            <div id="invoiceBody" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+            </div>
+            <div class="modal-actions" style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #eee; margin: 0; display: flex; gap: 10px;">
+                <button type="button" onclick="printActualInvoice()" style="flex: 1; background: #27ae60; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px;">🖨️ Print Invoice (A4)</button>
+                <button type="button" class="btn-cancel" onclick="closeInvoiceModal()" style="flex: 1;">Close Window</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Management Modals -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; border:none; color: #2c3e50;">System Users Directory</h3>
+                <button class="btn-add-user" onclick="openAddUserModal()">+ Add New User</button>
+            </div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table class="table-clean" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 10px; width: 35%; text-align: left;">Username (ID)</th>
+                            <th style="padding: 10px; width: 45%; text-align: left;">Role/Stage</th>
+                            <th style="padding: 10px; width: 20%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr style="border-bottom: 1px solid #e9ecef;">
+                            <td style="padding: 10px; font-weight: bold; color: #2c3e50; text-align: left;">👤 {{ u.username }}</td>
+                            <td style="padding: 10px; text-align: left;"><span class="badge" style="background:#eef2f7; color:#2980b9; border:1px solid #d5e1ed; white-space:normal; display:inline-block;">{{ u.role }}</span></td>
+                            <td style="padding: 10px; text-align: right;">
+                                {% if u.username == 'admin' %}
+                                    <span style="background: #fadbd8; color: #c0392b; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; display: inline-block;">🔒 Super Admin</span>
+                                {% else %}
+                                    <button type="button" onclick="openUserDetails('{{ u.username }}', '{{ u.password }}', '{{ u.role }}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Edit / View</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" class="btn-cancel" onclick="closeUsersModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Edit User Profile & Stages Modal -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">✏️ Edit Worker Profile & Stages</h3>
+            <form action="/edit_user" method="POST">
+                <input type="hidden" name="old_username" id="editOldUsername">
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Username (ID):</label>
+                <input type="text" name="username" id="editUsername" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Password:</label>
+                <input type="text" name="password" id="editPassword" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px;">Assign Work Stages:</label>
+                <div id="editRolesContainer" style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- JS will inject checkboxes here -->
+                </div>
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeUserDetailsModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New System User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3>Add New System User</h3>
+            <form action="/add_user" method="POST">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Select Worker (Registered)</label>
+                <select name="username" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>-- Choose Worker --</option>
+                    {% for w in global_workers %}<option value="{{ w.name }}">{{ w.name }} ({{ w.department or 'General' }})</option>{% endfor %}
+                </select>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Password</label>
+                <input type="password" name="password" required placeholder="Set login password" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Assign Role / Permissions</label>
+                <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Admin" style="width: auto; margin-bottom: 0;"> Master Admin</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="RM" style="width: auto; margin-bottom: 0;"> RM (Quality Check)</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Store Manager" style="width: auto; margin-bottom: 0;"> Store Manager</label>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Receiving" style="width: auto; margin-bottom: 0;"> Receiving</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 1/Center Drilling" style="width: auto; margin-bottom: 0;"> Facing 1/Center Drilling</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Roughing" style="width: auto; margin-bottom: 0;"> Roughing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Finishing" style="width: auto; margin-bottom: 0;"> Finishing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 2/Drill Tapping" style="width: auto; margin-bottom: 0;"> Facing 2/Drill Tapping</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Final QC (Internal)" style="width: auto; margin-bottom: 0;"> Final QC (Internal)</label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" style="padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: white; font-weight: bold;">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form action="/change_password" method="POST">
+                <label style="font-size: 12px; color: #666;">Current Password</label>
+                <input type="password" name="current_password" required>
+                <label style="font-size: 12px; color: #666;">New Password</label>
+                <input type="password" name="new_password" required>
+                <label style="font-size: 12px; color: #666;">Confirm</label>
+                <input type="password" name="confirm_password" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" style="background: #2c3e50; color: white; border:none;">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+
+        function toggleDropdown() { document.getElementById('profileDropdown').classList.toggle('active'); }
+        function openPasswordModal() { document.getElementById('passwordModal').style.display = 'flex'; }
+        function closePasswordModal() { document.getElementById('passwordModal').style.display = 'none'; }
+        
+        // Scrap Sell JS Logic
+        function openSellScrapModal() { document.getElementById('sellScrapModal').style.display = 'flex'; }
+        function closeSellScrapModal() { document.getElementById('sellScrapModal').style.display = 'none'; }
+        
+        function calculateScrapTotal() {
+            let qty = parseFloat(document.getElementById('sellQty').value) || 0;
+            let rate = parseFloat(document.getElementById('sellRate').value) || 0;
+            document.getElementById('sellTotalAmount').innerText = (qty * rate).toFixed(2);
+        }
+
+        function validateScrapSale() {
+            let qty = parseFloat(document.getElementById('sellQty').value) || 0;
+            let maxQty = parseFloat(document.getElementById('maxScrapBalance').innerText) || 0;
+            
+            if (qty > maxQty) {
+                alert("Error: You cannot sell more scrap than the available balance (" + maxQty + " kg).");
+                return false;
+            }
+            if (qty <= 0) {
+                alert("Quantity must be greater than zero.");
+                return false;
+            }
+            return true;
+        }
+
+        function printScrapInvoice(invoice, date, buyer, qty, rate, total, remarks) {
+            let html = `
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <div style="text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px;">
+                        <h2 style="margin: 0; color: #2c3e50; font-size: 24px;">MOHATA COAL CO. PVT. LTD.</h2>
+                        <p style="margin: 5px 0 0 0; font-size: 14px; color: #7f8c8d;">Scrap Material Sales Invoice / Challan</p>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 30px; font-size: 14px;">
+                        <div>
+                            <strong>Buyer / Party Name:</strong><br>
+                            <span style="font-size: 16px;">${buyer}</span><br>
+                            <span style="color: #666; font-size: 12px;">Remarks/Vehicle: ${remarks || 'N/A'}</span>
+                        </div>
+                        <div style="text-align: right;">
+                            <strong>Invoice No:</strong> ${invoice}<br>
+                            <strong>Date:</strong> ${date}
+                        </div>
+                    </div>
+                    
+                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+                        <thead>
+                            <tr style="background: #f8f9fa;">
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: left;">Description</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Quantity (kg)</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: center;">Rate (₹)</th>
+                                <th style="border: 1px solid #ddd; padding: 10px; text-align: right;">Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="border: 1px solid #ddd; padding: 10px;">Factory Industrial Scrap (Iron/Steel)</td>
+                                <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${qty}</td>
+                                <td style="border: 1px solid #ddd; padding: 10px; text-align: center;">${rate}</td>
+                                <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold;">${total}</td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold;">Grand Total:</td>
+                                <td style="border: 1px solid #ddd; padding: 10px; text-align: right; font-weight: bold; font-size: 16px; color: #27ae60;">₹${total}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    
+                    <div style="display: flex; justify-content: space-between; margin-top: 80px; font-size: 14px; font-weight: bold;">
+                        <div style="text-align: center; width: 200px; border-top: 1px solid #ccc; padding-top: 10px;">Authorized Signatory</div>
+                        <div style="text-align: center; width: 200px; border-top: 1px solid #ccc; padding-top: 10px;">Buyer Signature</div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('invoiceBody').innerHTML = html;
+            document.getElementById('invoiceModal').style.display = 'flex';
+        }
+        
+        function closeInvoiceModal() { document.getElementById('invoiceModal').style.display = 'none'; }
+        
+        function printActualInvoice() {
+            let content = document.getElementById('invoiceBody').innerHTML;
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Print Scrap Invoice</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+                        @media print { 
+                            button { display: none; } 
+                            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content}
+                    <script>
+                        window.onload = function() { window.print(); window.close(); }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // Users Management Modal Functions
+        function openUsersModal() { document.getElementById('usersModal').style.display = 'flex'; }
+        function closeUsersModal() { document.getElementById('usersModal').style.display = 'none'; }
+        function openAddUserModal() { closeUsersModal(); document.getElementById('addUserModal').style.display = 'flex'; }
+        function closeAddUserModal() { document.getElementById('addUserModal').style.display = 'none'; openUsersModal(); }
+
+        function openUserDetails(username, password, role) {
+            closeUsersModal();
+            document.getElementById('editOldUsername').value = username;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editPassword').value = password;
+            
+            let userRoles = role ? role.split(',').map(r => r.trim()) : [];
+            let stagesList = ["Receiving", "Facing 1/Center Drilling", "Roughing", "Finishing", "Facing 2/Drill Tapping", "Final QC (Internal)"];
+            
+            let rolesHtml = `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #d35400;">
+                    <input type="checkbox" name="permissions" value="Admin" ${userRoles.includes('Admin') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Master Admin
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #27ae60;">
+                    <input type="checkbox" name="permissions" value="RM" ${userRoles.includes('RM') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> RM (Quality Check)
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; color: #333; font-size: 13px;">
+                    <input type="checkbox" name="permissions" value="Store Manager" ${userRoles.includes('Store Manager') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Store Manager
+                </label>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                <div style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px; text-transform: uppercase; font-weight: bold;">Production Stages</div>
+            `;
+            
+            stagesList.forEach(stage => {
+                rolesHtml += `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #333;">
+                    <input type="checkbox" name="permissions" value="${stage}" ${userRoles.includes(stage) ? 'checked' : ''} style="width: auto; margin-right: 8px;"> ${stage}
+                </label>`;
+            });
+            
+            document.getElementById('editRolesContainer').innerHTML = rolesHtml;
+            document.getElementById('userDetailsModal').style.display = 'flex';
+        }
+
+        function closeUserDetailsModal() { document.getElementById('userDetailsModal').style.display = 'none'; openUsersModal(); }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) event.target.style.display = "none";
+            if (!event.target.matches('.profile-btn') && !event.target.closest('.profile-btn')) {
+                let dropdowns = document.getElementsByClassName('profile-dropdown');
+                for (let i = 0; i < dropdowns.length; i++) dropdowns[i].classList.remove('active');
+            }
+        }
+
+        // Filtering and Sorting functions
+        function applyFilters() {
+            let activeTab = document.querySelector('.tab-content.active');
+            if (!activeTab) return;
+            
+            let searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            let sortType = document.getElementById('sortSelect').value;
+            
+            let tbody = activeTab.querySelector('tbody');
+            if (!tbody) return;
+            
+            let rows = Array.from(tbody.querySelectorAll('tr.data-row'));
+            
+            // Apply Sorting
+            rows.sort((a, b) => {
+                let weightA = parseFloat(a.getAttribute('data-weight')) || 0;
+                let weightB = parseFloat(b.getAttribute('data-weight')) || 0;
+                let incA = parseInt(a.getAttribute('data-incidents')) || 0;
+                let incB = parseInt(b.getAttribute('data-incidents')) || 0;
+                
+                if (sortType === 'high_scrap') return weightB - weightA;
+                if (sortType === 'low_scrap') return weightA - weightB;
+                if (sortType === 'high_incidents') return incB - incA;
+                if (sortType === 'low_incidents') return incA - incB;
+                return 0;
+            });
+            
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Apply Search Filtering
+            rows.forEach(row => {
+                let textContent = row.textContent.toLowerCase();
+                if (textContent.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        function openTab(tabName, btnElement) {
+            let tabs = document.getElementsByClassName("tab-content");
+            for (let i = 0; i < tabs.length; i++) tabs[i].classList.remove("active");
+            
+            let btns = document.getElementsByClassName("tab-btn");
+            for (let i = 0; i < btns.length; i++) btns[i].classList.remove("active");
+            
+            document.getElementById(tabName).classList.add("active");
+            if(btnElement) btnElement.classList.add("active");
+            
+            applyFilters();
+        }
+        
+        document.addEventListener("DOMContentLoaded", applyFilters);
+    </script>
+</body>
+</html>

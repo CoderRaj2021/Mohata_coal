@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workers Management - Mohata Coal Co.</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body, html { height: 100%; margin: 0; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9;}
+        
+        .sidebar { height: 100vh; width: 250px; background: #2c3e50; position: fixed; left: 0; top: 0; z-index: 1001; transition: 0.3s ease; }
+        .main-content { height: 100vh; margin-left: 250px; display: flex; flex-direction: column; box-sizing: border-box; overflow-y: auto; transition: 0.3s ease;}
+        
+        /* Mobile Menu Button & Overlay */
+        .mobile-menu-btn { display: none; font-size: 24px; background: none; border: none; cursor: pointer; color: #2c3e50; padding: 0; margin-right: 10px; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: white; border-bottom: 1px solid #dee2e6; margin-bottom: 0px;}
+        header h1 { margin: 0; font-size: 22px; color: #2c3e50; display: flex; align-items: center;}
+        .header-right { display: flex; align-items: center; }
+        
+        .user-welcome { display: flex; align-items: center; position: relative; }
+        .top-logo { height: 40px; margin-right: 15px; } 
+        
+        .profile-dropdown { position: relative; display: inline-block; }
+        .profile-btn { background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; text-align: left; top: 100%; margin-top: 5px;}
+        .dropdown-content .profile-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; color: #2c3e50; font-size: 13px; }
+        .dropdown-content a, .dropdown-content button { color: #333; padding: 10px 15px; text-decoration: none; display: block; width: 100%; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; }
+        .dropdown-content a:hover, .dropdown-content button:hover { background-color: #f1f1f1; color: #e74c3c; }
+        .profile-dropdown.active .dropdown-content { display: block; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 100%; max-width: 480px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content.large-modal { max-width: 800px; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        .modal-content input, .modal-content select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        .modal-actions button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; color: white; }
+        .btn-submit { background: #2c3e50; }
+        .btn-cancel { background: #95a5a6; }
+        .btn-add-user { background: #27ae60; padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        
+        .flash-msg { background: #d4edda; color: #155724; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 13px; border: 1px solid #c3e6cb; }
+
+        .table-container { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px; margin-top: 20px;}
+        .table-wrapper { flex-grow: 1; overflow-y: auto; padding-right: 5px; }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px;}
+        ::-webkit-scrollbar-thumb { background: #bdc3c7; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
+
+        .table-clean { width: 100%; border-collapse: collapse; min-width: 600px;}
+        .table-clean th { background: #f8f9fa; padding: 12px 15px; border-bottom: 2px solid #dee2e6; color: #495057; font-size: 12px; text-transform: uppercase; text-align: left; position: sticky; top: 0; z-index: 10;}
+        .table-clean td { padding: 15px; border-bottom: 1px solid #e9ecef; vertical-align: middle; font-size: 14px; color: #333; text-align: left;}
+        
+        .worker-link { color: #2980b9; text-decoration: none; font-weight: bold; font-size: 15px; cursor: pointer; border-bottom: 1px dashed #2980b9;}
+        .worker-link:hover { color: #1c5980; }
+        
+        /* Fixed Badge Style for user management table */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; white-space: normal; }
+        .badge-active { background: #d4edda; color: #155724; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #c3e6cb;}
+        .badge-inactive { background: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; border: 1px solid #f5c6cb;}
+        
+        .btn-add { background: #27ae60; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+        .btn-add:hover { background: #219150; }
+        .btn-edit { background: #f39c12; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
+        .btn-edit:hover { background: #d68910; }
+
+        .prof-tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; overflow-x: auto; white-space: nowrap;}
+        .prof-tab-btn { background: none; border: none; padding: 8px 15px; cursor: pointer; font-size: 13px; font-weight: bold; color: #7f8c8d; border-bottom: 3px solid transparent; flex-shrink: 0; }
+        .prof-tab-btn.active { color: #2c3e50; border-bottom: 3px solid #3498db; }
+        .prof-tab-content { display: none; }
+        .prof-tab-content.active { display: block; }
+        
+        .details-table { width: 100%; border-collapse: collapse; font-size: 13px; color: #333; }
+        .details-table td { padding: 10px 5px; border-bottom: 1px solid #eee; }
+        .details-table td:first-child { width: 35%; color: #555; font-weight: bold;}
+        .btn-view { background: #3498db; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;}
+        .btn-view:hover { background: #2980b9; }
+
+        .perf-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px; }
+        .perf-table th { background: #ecf0f1; padding: 8px; border-bottom: 2px solid #bdc3c7; color: #2c3e50; text-align: left; position: sticky; top:0; z-index: 5;}
+        .perf-table td { padding: 8px; border-bottom: 1px solid #eee; color: #444; }
+        .perf-type-scrap { display:inline-block; background: #fef9e7; border-left: 3px solid #f39c12; padding: 3px 6px; font-size: 11px; font-weight: bold; color: #d35400; border-radius: 2px; }
+        .perf-type-action { display:inline-block; background: #eaf2f8; border-left: 3px solid #2980b9; padding: 3px 6px; font-size: 11px; font-weight: bold; color: #1c5980; border-radius: 2px; }
+
+        /* ====== MOBILE RESPONSIVENESS ====== */
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+            .sidebar { left: -250px; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; }
+            
+            header { padding: 15px; flex-direction: column; align-items: flex-start; gap: 15px;}
+            header h1 { font-size: 18px; width: 100%; justify-content: flex-start;}
+            .header-right { width: 100%; justify-content: space-between; }
+            .top-logo { height: 30px; margin-right: 5px;}
+            
+            .modal-content { width: 95%; padding: 15px; }
+            .table-container { padding: 10px; margin: 10px; border-radius: 6px; }
+            
+            #profTitle { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .prof-title-actions { width: 100%; display: flex; gap: 10px; }
+            .prof-title-actions button { flex: 1; }
+            
+            .date-filter-box { flex-direction: column; align-items: stretch; gap: 10px; }
+            .date-filter-box input, .date-filter-box button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="company-logo"><h2>Admin Panel</h2></div>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/client_supply">RM Input</a></li>
+            <li>
+                <a href="/purchase">
+                    Purchase & Assets 
+                    {% if low_stock_count > 0 %}
+                    <span style="background: #e74c3c; color: white; border-radius: 50%; padding: 3px 8px; font-size: 12px; margin-left: 5px; font-weight: bold;">{{ low_stock_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            
+            <!-- RM USER SHOULD NOT SEE EXPENSES MENU -->
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/expenses">Expenses & Analytics</a></li>
+            {% endif %}
+            
+            <li class="active"><a href="/workers">Workers</a></li>
+            <li><a href="/production">Production Workflow</a></li>
+            
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/scrap_log">Scrap Log</a></li>
+            <li><a href="/audit_log">Audit & Traceability</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="main-content" style="background-image: url('/static/logo.png'); background-size: 50%; background-repeat: no-repeat; background-position: center; background-color: rgba(244, 246, 249, 0.95);">
+        <header>
+            <h1>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                Workers Management
+            </h1>
+            <div class="header-right">
+                <div class="user-welcome">
+                    <img src="/static/logo/logo.png" alt="Logo" class="top-logo">
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('username') }} ▾</button>
+                        <div class="dropdown-content">
+                            <div class="profile-header">Role: {{ session.get('role') }}</div>
+                            <!-- ONLY ADMIN CAN MANAGE USERS -->
+                            {% if 'Admin' in session.get('role', '') %}
+                            <button onclick="openUsersModal()">Manage Users</button>
+                            {% endif %}
+                            <button onclick="openPasswordModal()">Reset Password</button>
+                            <a href="{{ url_for('auth.logout') }}">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}<div style="margin-bottom: 15px; padding: 0 20px;"><div class="flash-msg">{{ messages[0] }}</div></div>{% endif %}
+        {% endwith %}
+
+        <div style="padding: 0 20px; display: flex; flex-direction: column; flex-grow: 1;">
+            <div class="table-container">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-shrink: 0; flex-wrap: wrap; gap: 10px;">
+                    <!-- ONLY ADMIN CAN ADD NEW WORKER -->
+                    {% if 'Admin' in session.get('role', '') %}
+                    <button class="btn-add" onclick="openAddModal()">+ Add New Worker</button>
+                    {% else %}
+                    <div style="font-weight: bold; color: #7f8c8d; font-size: 14px;">View Access Only</div>
+                    {% endif %}
+                    <p style="font-size: 13px; color: #7f8c8d; margin: 0;">Click on a worker's name to view their Profile, Files & History.</p>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="table-clean">
+                        <tr>
+                            <th>Worker Name</th>
+                            <th>Phone</th>
+                            <th>Department / Skill</th>
+                            <th>Joining Date</th>
+                            <th>Status</th>
+                            <th style="text-align: right;">Action</th>
+                        </tr>
+                        {% for w in workers %}
+                        <tr>
+                            <td><a class="worker-link" onclick="openProfileModal('{{ w.name }}')">{{ w.name }}</a></td>
+                            <td>{{ w.phone or 'N/A' }}</td>
+                            <td>{{ w.department or 'N/A' }}</td>
+                            <td>{{ w.joining_date }}</td>
+                            <td>
+                                {% if w.status == 'Active' %}
+                                    <span class="badge-active">Active</span>
+                                {% else %}
+                                    <span class="badge-inactive">{{ w.status }}</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: right; display: flex; gap: 5px; justify-content: flex-end; align-items: center;">
+                                <!-- ONLY ADMIN CAN EDIT OR CHANGE STATUS -->
+                                {% if 'Admin' in session.get('role', '') %}
+                                <button type="button" class="btn-edit"
+                                    data-id="{{ w.id }}" 
+                                    data-name="{{ w.name }}" 
+                                    data-phone="{{ w.phone or '' }}" 
+                                    data-dept="{{ w.department or 'General' }}" 
+                                    data-date="{{ w.joining_date }}" 
+                                    data-address="{{ w.address or '' }}" 
+                                    onclick="openEditModal(this.dataset.id, this.dataset.name, this.dataset.phone, this.dataset.dept, this.dataset.date, this.dataset.address)">Edit</button>
+                                
+                                <form action="/workers" method="POST" style="display:inline;">
+                                    <input type="hidden" name="action" value="edit_status">
+                                    <input type="hidden" name="worker_id" value="{{ w.id }}">
+                                    <select name="status" onchange="this.form.submit()" style="padding: 5px; font-size: 12px; border-radius: 4px; margin-bottom: 0;">
+                                        <option value="Active" {% if w.status == 'Active' %}selected{% endif %}>Active</option>
+                                        <option value="Inactive" {% if w.status == 'Inactive' %}selected{% endif %}>Inactive</option>
+                                    </select>
+                                </form>
+                                {% else %}
+                                <span style="font-size: 11px; color: #95a5a6; font-style: italic;">View Only</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}<tr><td colspan="6" style="text-align: center; padding:30px; color: #7f8c8d;">No workers added yet.</td></tr>{% endfor %}
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Worker Modal -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Worker</h3>
+            <form action="/workers" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="add">
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Full Name *</label>
+                        <input type="text" name="name" required placeholder="Enter name">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Phone Number</label>
+                        <input type="text" name="phone" placeholder="Contact number">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Department / Skill</label>
+                        <select name="department" required>
+                            <option value="General">General Worker</option>
+                            <option value="RM (Quality Check)">RM (Quality Check)</option>
+                            <option value="Facing 1">Facing 1</option>
+                            <option value="Roughing">Roughing</option>
+                            <option value="Facing 2">Facing 2</option>
+                            <option value="Final Centering">Final Centering</option>
+                            <option value="Finish Store">Finish Store</option>
+                            <option value="Inspection">Inspection</option>
+                            <option value="Store Manager">Store Manager</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Joining Date</label>
+                        <input type="date" name="joining_date" required id="joinDateInput">
+                    </div>
+                </div>
+
+                <label style="font-size: 12px; color: #666; font-weight: bold;">Address</label>
+                <textarea name="address" rows="2" placeholder="Full address" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 13px;"></textarea>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">ID Proof</label>
+                        <input type="file" name="id_proof" accept=".jpg,.jpeg,.png,.pdf" style="padding: 5px;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">CV / Resume</label>
+                        <input type="file" name="cv" accept=".jpg,.jpeg,.png,.pdf" style="padding: 5px;">
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60;">Save Worker</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Worker Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Worker Details</h3>
+            <form action="/workers" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="worker_id" id="editWorkerId">
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Full Name *</label>
+                        <input type="text" name="name" id="editName" required>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Phone Number</label>
+                        <input type="text" name="phone" id="editPhone">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Department / Skill</label>
+                        <select name="department" id="editDepartment" required>
+                            <option value="General">General Worker</option>
+                            <option value="RM (Quality Check)">RM (Quality Check)</option>
+                            <option value="Facing 1">Facing 1</option>
+                            <option value="Roughing">Roughing</option>
+                            <option value="Facing 2">Facing 2</option>
+                            <option value="Final Centering">Final Centering</option>
+                            <option value="Finish Store">Finish Store</option>
+                            <option value="Inspection">Inspection</option>
+                            <option value="Store Manager">Store Manager</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Joining Date</label>
+                        <input type="date" name="joining_date" id="editJoiningDate" required>
+                    </div>
+                </div>
+
+                <label style="font-size: 12px; color: #666; font-weight: bold;">Address</label>
+                <textarea name="address" id="editAddress" rows="2" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-bottom: 10px; font-family: inherit; font-size: 13px;"></textarea>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Update ID Proof</label>
+                        <input type="file" name="id_proof" accept=".jpg,.jpeg,.png,.pdf" style="padding: 5px;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="font-size: 12px; color: #666; font-weight: bold;">Update CV / Resume</label>
+                        <input type="file" name="cv" accept=".jpg,.jpeg,.png,.pdf" style="padding: 5px;">
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" style="background: #f39c12;">Update Details</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Worker Profile Modal -->
+    <div id="profileModal" class="modal">
+        <div class="modal-content large-modal">
+            <div id="profTitle" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 2px solid #eee; padding-bottom: 8px; margin-bottom: 15px; font-size: 18px; font-weight: bold; color: #2c3e50;">
+                Worker Profile
+                
+                <!-- ONLY ADMIN CAN EXPORT OR PRINT -->
+                {% if 'Admin' in session.get('role', '') %}
+                <div class="prof-title-actions" style="display: flex; gap: 10px;">
+                    <button type="button" onclick="exportWorkerTabToExcel()" style="background:#27ae60; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📊 Export Excel</button>
+                    <button type="button" onclick="printWorkerTab()" style="background:#2980b9; color:white; border:none; padding:5px 12px; border-radius:4px; font-size:12px; font-weight:bold; cursor:pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨️ Print Tab</button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="prof-tabs">
+                <button class="prof-tab-btn active" onclick="switchProfTab(event, 'Personal')">Personal Details</button>
+                <button class="prof-tab-btn" onclick="switchProfTab(event, 'Performance')">⭐ Production & Quality Log</button>
+                <button class="prof-tab-btn" onclick="switchProfTab(event, 'Assets')">Assets Issued</button>
+                <button class="prof-tab-btn" onclick="switchProfTab(event, 'Cash')">Cash Advances</button>
+            </div>
+
+            <!-- DATE FILTER UI -->
+            <div class="date-filter-box" style="display:flex; gap:10px; margin-bottom:15px; padding:10px; background:#f8f9fa; border:1px solid #ddd; border-radius:4px; align-items:center;">
+                <span style="font-size:12px; font-weight:bold; color:#2c3e50;">Date Filter:</span>
+                <input type="date" id="profStartDate" style="padding:4px; font-size:12px; border:1px solid #ccc; border-radius:3px; margin:0; width:auto;">
+                <span style="font-size:12px; color:#7f8c8d;">to</span>
+                <input type="date" id="profEndDate" style="padding:4px; font-size:12px; border:1px solid #ccc; border-radius:3px; margin:0; width:auto;">
+                <button type="button" onclick="applyWorkerFilter()" style="background:#3498db; color:white; border:none; padding:5px 12px; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer;">Apply</button>
+                <button type="button" onclick="clearWorkerFilter()" style="background:#95a5a6; color:white; border:none; padding:5px 12px; border-radius:3px; font-size:12px; font-weight:bold; cursor:pointer;">Clear</button>
+            </div>
+
+            <!-- Personal Details Tab -->
+            <div id="Personal" class="prof-tab-content active">
+                <div id="detailsContainer"></div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div id="Performance" class="prof-tab-content">
+                <div style="max-height: 400px; overflow-x: auto; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                    <table class="perf-table" id="perfTableData">
+                        <thead>
+                            <tr>
+                                <th style="width:15%">Date & Time</th>
+                                <th style="width:20%">Batch & Client</th>
+                                <th style="width:25%">Axle No & Stage</th>
+                                <th style="width:15%">Scrap (kg)</th>
+                                <th style="width:25%">Status / Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="perfContainer">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Assets Tab -->
+            <div id="Assets" class="prof-tab-content">
+                <div style="max-height: 400px; overflow-x: auto; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;" id="assetsContainer"></div>
+            </div>
+            
+            <!-- Cash Advances Tab -->
+            <div id="Cash" class="prof-tab-content">
+                <div style="max-height: 400px; overflow-x: auto; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;" id="cashContainer"></div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;">
+                <button type="button" class="btn-cancel" onclick="closeProfileModal()">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Users Management Modals -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; border:none; color: #2c3e50;">System Users Directory</h3>
+                <button class="btn-add-user" onclick="openAddUserModal()">+ Add New User</button>
+            </div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table class="table-clean" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 10px; width: 35%; text-align: left;">Username (ID)</th>
+                            <th style="padding: 10px; width: 45%; text-align: left;">Role/Stage</th>
+                            <th style="padding: 10px; width: 20%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr style="border-bottom: 1px solid #e9ecef;">
+                            <td style="padding: 10px; font-weight: bold; color: #2c3e50; text-align: left;">👤 {{ u.username }}</td>
+                            <td style="padding: 10px; text-align: left;"><span class="badge" style="background:#eef2f7; color:#2980b9; border:1px solid #d5e1ed; white-space:normal; display:inline-block;">{{ u.role }}</span></td>
+                            <td style="padding: 10px; text-align: right;">
+                                <button type="button" onclick="openUserDetails('{{ u.username }}', '{{ u.password }}', '{{ u.role }}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Edit / View</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" class="btn-cancel" onclick="closeUsersModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Edit User Profile & Stages Modal -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">✏️ Edit Worker Profile & Stages</h3>
+            <form action="/edit_user" method="POST">
+                <input type="hidden" name="old_username" id="editOldUsername">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Username (ID):</label>
+                <input type="text" name="username" id="editUsername" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Password:</label>
+                <input type="text" name="password" id="editPassword" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px;">Assign Work Stages:</label>
+                <div id="editRolesContainer" style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- JS will inject checkboxes here -->
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeUserDetailsModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New System User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3>Add New System User</h3>
+            <form action="/add_user" method="POST">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Select Worker (Registered)</label>
+                <select name="username" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>-- Choose Worker --</option>
+                    {% for w in global_workers %}<option value="{{ w.name }}">{{ w.name }} ({{ w.department or 'General' }})</option>{% endfor %}
+                </select>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Password</label>
+                <input type="password" name="password" required placeholder="Set login password" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Assign Role / Permissions</label>
+                <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Admin" style="width: auto; margin-bottom: 0;"> Master Admin</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="RM" style="width: auto; margin-bottom: 0;"> RM (Quality Check)</label>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Receiving" style="width: auto; margin-bottom: 0;"> Receiving</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 1/Center Drilling" style="width: auto; margin-bottom: 0;"> Facing 1/Center Drilling</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Roughing" style="width: auto; margin-bottom: 0;"> Roughing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Finishing" style="width: auto; margin-bottom: 0;"> Finishing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 2/Drill Tapping" style="width: auto; margin-bottom: 0;"> Facing 2/Drill Tapping</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Final QC (Internal)" style="width: auto; margin-bottom: 0;"> Final QC (Internal)</label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form action="/change_password" method="POST">
+                <label style="font-size: 12px; color: #666;">Current Password</label>
+                <input type="password" name="current_password" required>
+                <label style="font-size: 12px; color: #666;">New Password</label>
+                <input type="password" name="new_password" required>
+                <label style="font-size: 12px; color: #666;">Confirm</label>
+                <input type="password" name="confirm_password" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" style="background: #2c3e50; color: white; border:none;">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden JSON for JS Data -->
+    <script id="workerHistoryJson" type="application/json">
+        {{ worker_history | tojson | safe }}
+    </script>
+    <script id="currentUserRoleJson" type="application/json">"{{ session.get('role', '') }}"</script>
+
+    <!-- External JS Link -->
+    <script src="/static/js/workers.js"></script>
+</body>
+</html>

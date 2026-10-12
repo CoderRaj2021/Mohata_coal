@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit & Traceability Log - Mohata Coal Co.</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body, html { height: 100%; margin: 0; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9;}
+        
+        .sidebar { height: 100vh; width: 250px; background: #2c3e50; position: fixed; left: 0; top: 0; z-index: 1001; transition: 0.3s ease; }
+        .main-content { height: 100vh; margin-left: 250px; display: flex; flex-direction: column; box-sizing: border-box; overflow-y: auto; transition: 0.3s ease;}
+        
+        .mobile-menu-btn { display: none; font-size: 24px; background: none; border: none; cursor: pointer; color: #2c3e50; padding: 0; margin-right: 10px; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: white; border-bottom: 1px solid #dee2e6; margin-bottom: 0px;}
+        header h1 { margin: 0; font-size: 22px; color: #2c3e50; display: flex; align-items: center;}
+        .header-right { display: flex; align-items: center; }
+        
+        .user-welcome { display: flex; align-items: center; position: relative; }
+        .top-logo { height: 40px; margin-right: 15px; } 
+        
+        /* Dropdown Styles */
+        .profile-dropdown { position: relative; display: inline-block; }
+        .profile-btn { background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; text-align: left; top: 100%; margin-top: 5px;}
+        .dropdown-content .profile-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; color: #2c3e50; font-size: 13px; }
+        .dropdown-content a, .dropdown-content button { color: #333; padding: 10px 15px; text-decoration: none; display: block; width: 100%; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; }
+        .dropdown-content a:hover, .dropdown-content button:hover { background-color: #f1f1f1; color: #e74c3c; }
+        .profile-dropdown.active .dropdown-content { display: block; }
+        
+        /* Modal Styles */
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        .modal-content input[type="text"], .modal-content input[type="password"], .modal-content select { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        .modal-actions button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: white; font-weight: bold;}
+        .btn-cancel { background: #95a5a6; color: white !important; }
+        .btn-add-user { background: #27ae60; padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; white-space: normal; }
+
+        /* TABS */
+        .tabs { display: flex; border-bottom: 2px solid #ddd; background: white; padding: 10px 20px 0 20px; flex-shrink: 0;}
+        .tab-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; font-size: 15px; font-weight: bold; color: #7f8c8d; border-bottom: 3px solid transparent; white-space: nowrap;}
+        .tab-btn:hover { color: #2c3e50; }
+        .tab-btn.active { color: #2c3e50; border-bottom: 3px solid #3498db; }
+        .tab-content { display: none; padding: 20px; }
+        .tab-content.active { display: block; }
+
+        .search-box { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; background: #eef2f7; padding: 15px; border-radius: 6px; border: 1px solid #d5e1ed;}
+        .search-box select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; min-width: 250px; font-weight: bold; color: #2c3e50; }
+        .search-box button { background: #2980b9; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; }
+        .search-box button:hover { background: #1c5980; }
+
+        /* Axle Card Styles */
+        .axle-card { background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; padding: 15px 20px; border-left: 6px solid #3498db; }
+        .axle-card.Scrap, .axle-card.Reject { border-left-color: #e74c3c; }
+        .axle-card.Pass { border-left-color: #27ae60; }
+        .axle-card.Pending, .axle-card.Hold { border-left-color: #f39c12; }
+        
+        .axle-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f1f1; padding-bottom: 12px; margin-bottom: 12px; }
+        
+        .table-container { overflow-x: auto; background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05); width: 100%;}
+        .table-clean { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .table-clean th { background: #f8f9fa; padding: 12px 15px; text-align: left; color: #495057; border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 12px; }
+        .table-clean td { padding: 12px 15px; border-bottom: 1px solid #e9ecef; color: #333; vertical-align: middle; }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: inline-block; }
+            .sidebar { left: -250px; position: fixed; z-index: 1001; transition: 0.3s; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; }
+            header { padding: 15px; flex-direction: column; align-items: flex-start; gap: 15px;}
+            header h1 { font-size: 18px; width: 100%; display: flex; align-items: center;}
+            .header-right { width: 100%; justify-content: space-between; }
+            .search-box { flex-direction: column; align-items: stretch; }
+            .axle-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .axle-header > div:last-child { text-align: left; }
+            .tabs { overflow-x: auto; padding-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="company-logo"><h2>Admin Panel</h2></div>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/client_supply">RM Input</a></li>
+            <li>
+                <a href="/purchase">Purchase & Assets {% if low_stock_count > 0 %}<span style="background: #e74c3c; color: white; border-radius: 50%; padding: 3px 8px; font-size: 12px; margin-left: 5px; font-weight: bold;">{{ low_stock_count }}</span>{% endif %}</a>
+            </li>
+            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+            <li><a href="/expenses">Expenses & Analytics</a></li>
+            {% endif %}
+            <li><a href="/workers">Workers</a></li>
+            <li><a href="/production">Production Workflow</a></li>
+            {% if 'Admin' in session.get('role', '') or 'Store Manager' in session.get('role', '') %}
+            <li><a href="/scrap_log">Scrap Log</a></li>
+            {% endif %}
+            {% if 'Admin' in session.get('role', '') %}
+            <li class="active"><a href="/audit_log">Audit & Traceability</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <header>
+            <h1>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                Audit & Traceability Logs
+            </h1>
+            <div class="header-right">
+                <div class="user-welcome">
+                    <img src="/static/logo/logo.png" alt="Logo" class="top-logo">
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('username') }} ▾</button>
+                        <div class="dropdown-content">
+                            <div class="profile-header">Role: {{ session.get('role') }}</div>
+                            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+                            <button onclick="openUsersModal()">Manage Users</button>
+                            {% endif %}
+                            <button onclick="openPasswordModal()">Reset Password</button>
+                            <a href="{{ url_for('auth.logout') }}">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}<div style="margin-bottom: 15px; padding: 0 20px;"><div style="background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; font-size: 13px; border: 1px solid #c3e6cb;">{{ messages[0] }}</div></div>{% endif %}
+        {% endwith %}
+
+        <!-- Navigation Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="openTab('AxleTraceability', this)">Axle Lifecycle (Traceability)</button>
+            <button class="tab-btn" onclick="openTab('WorkerLogs', this)">Worker & Machine Logs</button>
+        </div>
+
+        <!-- TAB 1: Axle Traceability -->
+        <div id="AxleTraceability" class="tab-content active">
+            <form method="POST" action="/audit_log" class="search-box">
+                <label style="font-weight: bold; color: #2c3e50; font-size: 14px;">Select Batch to Trace:</label>
+                <select name="batch_number" required>
+                    <option value="" disabled {% if not selected_batch %}selected{% endif %}>-- Choose a Batch --</option>
+                    {% for b in base_batches %}
+                    <option value="{{ b }}" {% if b == selected_batch %}selected{% endif %}>Batch: {{ b }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit">🔍 Fetch Axle History</button>
+                {% if selected_batch %}
+                <button type="button" onclick="printAuditReport('{{ selected_batch }}')" style="background: #27ae60; margin-left: auto;">🖨️ Print Report</button>
+                {% endif %}
+            </form>
+
+            {% if selected_batch %}
+                <div id="printableReportContent">
+                    <h3 style="color: #2c3e50; margin-bottom: 20px; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px;">Detailed Axle-wise History for: <span style="color: #e74c3c;">{{ selected_batch }}</span></h3>
+                    
+                    {% for ax, status_info in axle_current_status.items() %}
+                        <div class="axle-card {{ status_info.status }}">
+                            <div class="axle-header">
+                                <div>
+                                    <span style="font-size: 18px; font-weight: bold; color: #2c3e50;">Axle No: <span style="color: #2980b9;">{{ ax }}</span></span>
+                                    <span style="margin-left: 15px; color: #7f8c8d; font-size: 13px;">Current Location: <strong style="color: #34495e; background: #ecf0f1; padding: 2px 6px; border-radius: 4px;">{{ status_info.batch_number }}</strong></span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="color: #7f8c8d; font-size: 12px; margin-right: 15px;">Current Stage: <strong style="color: #8e44ad;">{{ status_info.axle_current_stage }}</strong></span>
+                                    <span class="badge" style="
+                                        {% if status_info.status == 'Pass' %} background: #d4edda; color: #155724; border: 1px solid #c3e6cb;
+                                        {% elif status_info.status in ['Scrap', 'Reject'] %} background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb;
+                                        {% else %} background: #fff3cd; color: #856404; border: 1px solid #ffeeba; {% endif %}
+                                    ">Status: {{ status_info.status }}</span>
+                                </div>
+                            </div>
+                            
+                            {% if status_info.status in ['Hold', 'Reject', 'Scrap'] and status_info.reject_reason %}
+                                <div style="background: #fdf2e9; border-left: 4px solid #e74c3c; padding: 10px 15px; color: #c0392b; font-size: 13px; margin-bottom: 15px; font-weight: bold;">
+                                    ⚠️ Blocked / Stuck Reason: <span style="font-weight: normal;">{{ status_info.reject_reason }}</span>
+                                </div>
+                            {% endif %}
+
+                            <div style="overflow-x: auto;">
+                                <table class="table-clean" style="margin-bottom: 0;">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">Date & Time</th>
+                                            <th style="width: 20%;">Stage Processed</th>
+                                            <th style="width: 15%;">Machine Used</th>
+                                            <th style="width: 20%;">Action Taken</th>
+                                            <th style="width: 15%;">Worker / Admin</th>
+                                            <th style="width: 15%;">Remarks</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% if ax in axle_history %}
+                                            {% for log in axle_history[ax] %}
+                                            <tr>
+                                                <td style="color: #7f8c8d; font-size: 11px; font-weight: bold;">{{ log.timestamp }}</td>
+                                                <td style="font-weight: bold; color: #34495e; font-size: 12px;">{{ log.stage_name }}</td>
+                                                <td>
+                                                    {% if log.machine_name and log.machine_name != 'N/A' %}
+                                                        <span style="background: #ebf5fb; color: #2980b9; padding: 3px 6px; border-radius: 4px; font-size: 11px; border: 1px solid #d6eaf8; font-weight: bold;">⚙️ {{ log.machine_name }}</span>
+                                                    {% else %}
+                                                        <span style="color: #bdc3c7; font-size: 11px; font-style: italic;">No Machine</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td style="color: {% if 'Pass' in log.action_taken %}#27ae60{% elif 'Damaged' in log.action_taken or 'Reject' in log.action_taken or 'Hold' in log.action_taken or 'Held' in log.action_taken %}#c0392b{% else %}#f39c12{% endif %}; font-weight: bold; font-size: 12px;">
+                                                    {{ log.action_taken }}
+                                                </td>
+                                                <td style="font-size: 12px;">
+                                                    {% set worker_name = log.done_by.split(' (')[0] if '(' in log.done_by else log.done_by %}
+                                                    <span style="color: #8e44ad; font-weight: bold;">👤 {{ worker_name }}</span>
+                                                </td>
+                                                <td style="font-size: 11px; color: #555; font-style: italic;">{{ log.remark or '-' }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        {% else %}
+                                            <tr><td colspan="6" style="text-align: center; color: #95a5a6; padding: 20px; font-style: italic;">No audit history found for this specific axle yet.</td></tr>
+                                        {% endif %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 60px 20px; color: #7f8c8d; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 2px dashed #bdc3c7;">
+                    <div style="font-size: 40px; margin-bottom: 15px;">🔍</div>
+                    <h3 style="margin-bottom: 10px; color: #2c3e50;">No Batch Selected</h3>
+                    <p style="font-size: 14px;">Select a batch from the dropdown above to view the complete lifecycle, machine usage, and worker history of each individual axle.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- TAB 2: Worker Machine Logs -->
+        <div id="WorkerLogs" class="tab-content">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; margin-bottom: 15px;">Live Worker Machine Sessions & Production Log</h3>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <label style="font-size: 12px; font-weight: bold; color: #666;">Filter by Date:</label>
+                    <input type="date" id="filterSessionDate" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px;" onchange="filterWorkerLogs()">
+                    
+                    <input type="text" id="filterWorkerMachine" placeholder="🔍 Search Worker or Machine..." style="padding: 8px; width: 220px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; margin-left: 10px;" onkeyup="filterWorkerLogs()">
+                    
+                    <button onclick="clearWorkerLogFilters()" style="background: #95a5a6; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">Clear</button>
+                </div>
+                <button onclick="printWorkerLogs()" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 13px;">🖨️ Print Logs</button>
+            </div>
+
+            <div class="table-container">
+                <table class="table-clean" style="margin-bottom: 0;" id="workerLogsTable">
+                    <thead>
+                        <tr>
+                            <th>Worker Name</th>
+                            <th>Machine & Stage</th>
+                            <th>Login Time</th>
+                            <th>Logout Time</th>
+                            <th style="text-align: center;">Axles Processed</th>
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Loop variable is now 'ws' to avoid conflicting with the global 'session' -->
+                        {% for ws in worker_sessions %}
+                        <tr class="session-row" data-date="{{ ws.login_time.split(' ')[0] }}" data-worker="{{ ws.worker_name | lower }}" data-machine="{{ ws.machine_name | lower }}">
+                            <td><strong style="color: #2c3e50; font-size: 14px;">👤 {{ ws.worker_name }}</strong></td>
+                            <td>
+                                <span class="badge" style="background:#ebf5fb; color:#2980b9; border:1px solid #d6eaf8; font-size: 12px;">⚙️ {{ ws.machine_name }}</span><br>
+                                <span style="font-size:11px; color:#7f8c8d; font-weight:bold;">{{ ws.stage_name }}</span>
+                            </td>
+                            <td style="color:#34495e; font-size:12px;">{{ ws.login_time }}</td>
+                            <td style="color:#34495e; font-size:12px;">{{ ws.logout_time or '-' }}</td>
+                            <td style="text-align: center; font-weight: bold; font-size: 18px; color: #27ae60;">
+                                {{ ws.axles_processed }}
+                            </td>
+                            <td style="text-align: right;">
+                                {% if ws.status == 'Active' %}
+                                    <span class="badge" style="background:#d4edda; color:#155724; border:1px solid #c3e6cb; padding: 6px 10px;">🟢 Active Now</span>
+                                    
+                                    {% if 'Admin' in session.get('role', '') %}
+                                    <form action="/force_logout_session" method="POST" style="display:inline-block; margin-top: 5px;">
+                                        <input type="hidden" name="log_id" value="{{ ws.id }}">
+                                        <button type="submit" style="background: #e74c3c; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">Force Logout</button>
+                                    </form>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge" style="background:#f8f9fa; color:#7f8c8d; border:1px solid #dee2e6; padding: 6px 10px;">Completed</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="6" style="text-align: center; color: #7f8c8d; padding:30px;">No machine sessions recorded yet.</td></tr>
+                        {% endfor %}
+                        <tr id="noSessionDataRow" style="display: none;"><td colspan="6" style="text-align: center; color: #e74c3c; padding:30px; font-weight:bold;">No logs match your filter.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form action="/change_password" method="POST">
+                <label style="font-size: 12px; color: #666;">Current Password</label>
+                <input type="password" name="current_password" required>
+                <label style="font-size: 12px; color: #666;">New Password</label>
+                <input type="password" name="new_password" required>
+                <label style="font-size: 12px; color: #666;">Confirm</label>
+                <input type="password" name="confirm_password" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" style="background: #2c3e50; color: white; border:none;">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Users Management Modals -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; border:none; color: #2c3e50;">System Users Directory</h3>
+                <button class="btn-add-user" onclick="openAddUserModal()">+ Add New User</button>
+            </div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table class="table-clean" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 10px; width: 35%; text-align: left;">Username (ID)</th>
+                            <th style="padding: 10px; width: 45%; text-align: left;">Role/Stage</th>
+                            <th style="padding: 10px; width: 20%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr style="border-bottom: 1px solid #e9ecef;">
+                            <td style="padding: 10px; font-weight: bold; color: #2c3e50; text-align: left;">👤 {{ u.username }}</td>
+                            <td style="padding: 10px; text-align: left;"><span class="badge" style="background:#eef2f7; color:#2980b9; border:1px solid #d5e1ed; white-space:normal; display:inline-block;">{{ u.role }}</span></td>
+                            <td style="padding: 10px; text-align: right;">
+                                {% if u.username == 'admin' %}
+                                    <span style="background: #fadbd8; color: #c0392b; font-weight: bold; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; display: inline-block;">🔒 Super Admin</span>
+                                {% else %}
+                                    <button type="button" onclick="openUserDetails('{{ u.username }}', '{{ u.password }}', '{{ u.role }}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Edit / View</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" class="btn-cancel" onclick="closeUsersModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Edit User Profile & Stages Modal -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">✏️ Edit Worker Profile & Stages</h3>
+            <form action="/edit_user" method="POST">
+                <input type="hidden" name="old_username" id="editOldUsername">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Username (ID):</label>
+                <input type="text" name="username" id="editUsername" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Password:</label>
+                <input type="password" name="password" id="editPassword" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px;">Assign Work Stages:</label>
+                <div id="editRolesContainer" style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- JS will inject checkboxes here -->
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeUserDetailsModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New System User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3>Add New System User</h3>
+            <form action="/add_user" method="POST">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Select Worker (Registered)</label>
+                <select name="username" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>-- Choose Worker --</option>
+                    {% for w in global_workers %}<option value="{{ w.name }}">{{ w.name }} ({{ w.department or 'General' }})</option>{% endfor %}
+                </select>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Password</label>
+                <input type="password" name="password" required placeholder="Set login password" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Assign Role / Permissions</label>
+                <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Admin" style="width: auto; margin-bottom: 0;"> Master Admin</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="RM" style="width: auto; margin-bottom: 0;"> RM (Quality Check)</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Store Manager" style="width: auto; margin-bottom: 0;"> Store Manager</label>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Receiving" style="width: auto; margin-bottom: 0;"> Receiving</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 1/Center Drilling" style="width: auto; margin-bottom: 0;"> Facing 1/Center Drilling</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Roughing" style="width: auto; margin-bottom: 0;"> Roughing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Finishing" style="width: auto; margin-bottom: 0;"> Finishing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 2/Drill Tapping" style="width: auto; margin-bottom: 0;"> Facing 2/Drill Tapping</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Final QC (Internal)" style="width: auto; margin-bottom: 0;"> Final QC (Internal)</label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit" style="background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Data for JS -->
+    <script id="workflowStagesJson" type="application/json">["Receiving", "RM QC", "Facing 1/Center Drilling", "Roughing", "Finishing", "Facing 2/Drill Tapping", "Final QC (Internal)", "Finish Goods/Inspection (Client)", "Delivery"]</script>
+
+    <script src="/static/js/audit_log.js"></script>
+    <script>
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+            document.querySelector('.sidebar-overlay').classList.toggle('active');
+        }
+        function toggleDropdown() {
+            document.getElementById('profileDropdown').classList.toggle('active');
+        }
+        window.onclick = function(event) {
+            if (!event.target.matches('.profile-btn') && !event.target.closest('.profile-btn')) {
+                var dropdowns = document.getElementsByClassName("dropdown-content");
+                for (var i = 0; i < dropdowns.length; i++) {
+                    var openDropdown = dropdowns[i];
+                    if (openDropdown.parentElement.classList.contains('active')) {
+                        openDropdown.parentElement.classList.remove('active');
+                    }
+                }
+            }
+        }
+        
+        // --- TABS LOGIC ---
+        function openTab(tabName, btnElement) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].classList.remove("active");
+            }
+            tablinks = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].classList.remove("active");
+            }
+            document.getElementById(tabName).classList.add("active");
+            if (btnElement) btnElement.classList.add("active");
+        }
+
+        // Users Management Modal Functions
+        function openUsersModal() { document.getElementById('usersModal').style.display = 'flex'; }
+        function closeUsersModal() { document.getElementById('usersModal').style.display = 'none'; }
+        function openAddUserModal() { closeUsersModal(); document.getElementById('addUserModal').style.display = 'flex'; }
+        function closeAddUserModal() { document.getElementById('addUserModal').style.display = 'none'; openUsersModal(); }
+
+        function openUserDetails(username, password, role) {
+            closeUsersModal();
+            document.getElementById('editOldUsername').value = username;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editPassword').value = password;
+            
+            let userRoles = role ? role.split(',').map(r => r.trim()) : [];
+            let stagesList = ["Receiving", "Facing 1/Center Drilling", "Roughing", "Finishing", "Facing 2/Drill Tapping", "Final QC (Internal)"];
+            
+            let rolesHtml = `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #d35400;">
+                    <input type="checkbox" name="permissions" value="Admin" ${userRoles.includes('Admin') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Master Admin
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #27ae60;">
+                    <input type="checkbox" name="permissions" value="RM" ${userRoles.includes('RM') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> RM (Quality Check)
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; color: #333; font-size: 13px;">
+                    <input type="checkbox" name="permissions" value="Store Manager" ${userRoles.includes('Store Manager') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Store Manager
+                </label>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                <div style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px; text-transform: uppercase; font-weight: bold;">Production Stages</div>
+            `;
+            
+            stagesList.forEach(stage => {
+                rolesHtml += `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #333;">
+                    <input type="checkbox" name="permissions" value="${stage}" ${userRoles.includes(stage) ? 'checked' : ''} style="width: auto; margin-right: 8px;"> ${stage}
+                </label>`;
+            });
+            
+            document.getElementById('editRolesContainer').innerHTML = rolesHtml;
+            document.getElementById('userDetailsModal').style.display = 'flex';
+        }
+
+        function closeUserDetailsModal() { document.getElementById('userDetailsModal').style.display = 'none'; openUsersModal(); }
+
+        // --- FILTERING & PRINTING LOGIC FOR WORKER LOGS ---
+        function filterWorkerLogs() {
+            let dateFilter = document.getElementById('filterSessionDate').value;
+            let searchFilter = document.getElementById('filterWorkerMachine').value.toLowerCase();
+            let rows = document.querySelectorAll('.session-row');
+            
+            let visibleCount = 0;
+            rows.forEach(row => {
+                let rowDate = row.getAttribute('data-date');
+                let worker = row.getAttribute('data-worker');
+                let machine = row.getAttribute('data-machine');
+                
+                let matchDate = (dateFilter === "" || rowDate === dateFilter);
+                let matchSearch = (searchFilter === "" || worker.includes(searchFilter) || machine.includes(searchFilter));
+                
+                if (matchDate && matchSearch) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            let noDataRow = document.getElementById('noSessionDataRow');
+            if (noDataRow) {
+                noDataRow.style.display = (visibleCount === 0) ? '' : 'none';
+            }
+        }
+
+        function clearWorkerLogFilters() {
+            document.getElementById('filterSessionDate').value = '';
+            document.getElementById('filterWorkerMachine').value = '';
+            filterWorkerLogs();
+        }
+
+        function printWorkerLogs() {
+            let dateFilter = document.getElementById('filterSessionDate').value;
+            let searchFilter = document.getElementById('filterWorkerMachine').value;
+            
+            let filterText = [];
+            if (dateFilter) filterText.push(`Date: ${dateFilter}`);
+            if (searchFilter) filterText.push(`Search: ${searchFilter}`);
+            let subtitle = filterText.length > 0 ? `<p style="text-align: center; color: #7f8c8d; font-size: 13px; margin-top: -10px;">Filtered by: ${filterText.join(' | ')}</p>` : '';
+
+            // Clone table to manipulate for printing without affecting real page
+            let tableHtml = document.getElementById('workerLogsTable').cloneNode(true);
+            
+            // Remove hidden rows from the cloned table
+            let rows = tableHtml.querySelectorAll('tbody tr.session-row');
+            rows.forEach(row => {
+                if (row.style.display === 'none') {
+                    row.remove();
+                }
+            });
+
+            let printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Worker Machine Sessions</title>
+                    <style>
+                        @page { size: A4 portrait; margin: 15mm; }
+                        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; color: #333; font-size: 12px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                        h2 { text-align: center; color: #2c3e50; margin: 0 0 15px 0; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; text-transform: uppercase; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+                        th { background-color: #f8f9fa !important; color: #2c3e50; font-weight: bold; }
+                        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; font-size: 11px; }
+                        .footer { margin-top: 40px; display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; border-top: 1px dashed #ccc; padding-top: 15px; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Mohata Coal Co. - Worker & Machine Logs</h2>
+                    ${subtitle}
+                    ${tableHtml.outerHTML}
+                    <div class="footer">
+                        <div>System Generated Report</div>
+                        <div>Date & Time: ${new Date().toLocaleString()}</div>
+                        <div>Authorized Signature: _______________________</div>
+                    </div>
+                    <script>
+                        setTimeout(function() { window.print(); window.close(); }, 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // Custom Print Function for Axle Traceability Report
+        function printAuditReport(batchNo) {
+            let printContent = document.getElementById('printableReportContent').innerHTML;
+            let printWindow = window.open('', '_blank', 'width=900,height=700');
+            
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Audit Report - ${batchNo}</title>
+                    <style>
+                        @page { size: A4 portrait; margin: 15mm; }
+                        body { 
+                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                            padding: 20px; color: #333; font-size: 12px; 
+                            -webkit-print-color-adjust: exact; print-color-adjust: exact; 
+                            background: white; 
+                        }
+                        
+                        /* Header Styles */
+                        .print-header { text-align: center; border-bottom: 2px solid #2c3e50; padding-bottom: 15px; margin-bottom: 20px; }
+                        .print-header h2 { margin: 0; color: #2c3e50; font-size: 22px; text-transform: uppercase; }
+                        .print-header h3 { margin: 5px 0 0 0; color: #7f8c8d; font-size: 16px; }
+                        
+                        /* Axle Card Styles */
+                        .axle-card { 
+                            border: 1px solid #bdc3c7; border-left: 6px solid #3498db; 
+                            border-radius: 6px; padding: 15px; margin-bottom: 20px; 
+                            page-break-inside: avoid; background: #fff; 
+                        }
+                        .axle-card.Scrap, .axle-card.Reject { border-left-color: #e74c3c; }
+                        .axle-card.Pass { border-left-color: #27ae60; }
+                        .axle-card.Pending, .axle-card.Hold { border-left-color: #f39c12; }
+                        
+                        .axle-header { display: flex; justify-content: space-between; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 10px; align-items: center;}
+                        
+                        /* OVERRIDE SCROLLBARS FROM HTML */
+                        div { overflow: visible !important; overflow-x: visible !important; }
+                        
+                        /* Table Styles */
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
+                        th { background-color: #f8f9fa !important; color: #2c3e50; font-weight: bold; }
+                        
+                        .badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; display: inline-block; }
+                        
+                        /* Footer Styles */
+                        .footer-sigs { margin-top: 40px; display: flex; justify-content: space-between; border-top: 1px dashed #ccc; padding-top: 20px; font-weight: bold; font-size: 12px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="print-header">
+                        <h2>MOHATA COAL CO. PVT. LTD.</h2>
+                        <h3>Axle Audit & Traceability Report</h3>
+                        <p style="margin-top: 5px; font-weight: bold;">Traceability For Master Batch: ${batchNo}</p>
+                    </div>
+                    
+                    ${printContent}
+                    
+                    <div class="footer-sigs">
+                        <div>System Generated Report</div>
+                        <div>Authorized Signature: ___________________</div>
+                        <div>Date & Time: ${new Date().toLocaleString()}</div>
+                    </div>
+                    
+                    <script>
+                        setTimeout(function() { 
+                            window.print(); 
+                            window.close(); 
+                        }, 500);
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+    </script>
+</body>
+</html>

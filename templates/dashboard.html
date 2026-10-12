@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mohata Coal Co. Pvt. Ltd. - Command Center</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body, html { height: 100%; margin: 0; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; }
+        
+        /* Sidebar & Main Layout */
+        .sidebar { height: 100vh; width: 250px; background: #2c3e50; position: fixed; left: 0; top: 0; z-index: 1001; transition: 0.3s ease; }
+        .main-content { height: 100vh; margin-left: 250px; display: flex; flex-direction: column; box-sizing: border-box; overflow-y: auto; padding-bottom: 30px; transition: 0.3s ease;}
+        
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: white; border-bottom: 1px solid #dee2e6; margin-bottom: 0px;}
+        header h1 { margin: 0; font-size: 22px; color: #2c3e50; display: flex; align-items: center; gap: 10px;}
+        .header-right { display: flex; align-items: center; }
+        
+        .user-welcome { display: flex; align-items: center; position: relative; }
+        .top-logo { height: 40px; margin-right: 15px; } 
+        
+        .profile-dropdown { position: relative; display: inline-block; }
+        .profile-btn { background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 100; overflow: hidden; text-align: left; top: 100%; margin-top: 5px;}
+        .dropdown-content .profile-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; color: #2c3e50; font-size: 13px; }
+        .dropdown-content a, .dropdown-content button { color: #333; padding: 10px 15px; text-decoration: none; display: block; width: 100%; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; }
+        .dropdown-content a:hover, .dropdown-content button:hover { background-color: #f1f1f1; color: #e74c3c; }
+        .profile-dropdown.active .dropdown-content { display: block; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 100%; max-width: 480px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; font-size: 18px;}
+        .modal-content input, .modal-content select, .modal-content input[type="password"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        .modal-actions button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: bold; color: white; }
+        .btn-submit { background: #2c3e50; }
+        .btn-cancel { background: #95a5a6; color: white !important;}
+        .btn-add-user { background: #27ae60; padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        
+        .flash-msg { background: #d4edda; color: #155724; padding: 10px; border-radius: 4px; font-size: 13px; border: 1px solid #c3e6cb; margin: 20px 25px 0 25px;}
+        .error-msg { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 4px; font-size: 13px; border: 1px solid #f5c6cb; margin: 20px 25px 0 25px;}
+
+        /* Modern KPI Cards */
+        .section-title { margin: 20px 25px 15px 25px; font-size: 16px; font-weight: bold; color: #2c3e50; text-transform: uppercase;}
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; padding: 0 25px 25px 25px; }
+        .card { background: white; padding: 20px 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; text-decoration: none; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: all 0.3s ease; border: 1px solid #f0f0f0; position: relative; overflow: hidden;}
+        .card::before { content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 4px; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); }
+        .card h3 { margin: 0; color: #7f8c8d; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;}
+        .card p { margin: 10px 0 0 0; font-size: 28px; font-weight: 900; color: #2c3e50; }
+        .card small { font-size: 11px; color: #95a5a6; margin-top: 5px; font-weight: bold; }
+
+        .c-orange::before { background: #f39c12; }
+        .c-blue::before { background: #3498db; }
+        .c-green::before { background: #27ae60; }
+        .c-red::before { background: #e74c3c; }
+        .c-purple::before { background: #8e44ad; }
+        .c-teal::before { background: #16a085; }
+
+        .data-grids { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 0 25px 25px 25px; }
+        .data-grids.half { grid-template-columns: 1fr 1fr; }
+        .data-box { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; transition: all 0.3s ease; overflow-x: auto;}
+        .data-box.clickable:hover { box-shadow: 0 8px 20px rgba(52, 152, 219, 0.15); transform: translateY(-3px); cursor: pointer; border-color: #3498db;}
+        .data-box h3 { margin: 0 0 15px 0; font-size: 14px; color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 10px; text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 5px;}
+        .data-box h3 span { font-size: 11px; color: #3498db; text-transform: none; font-weight: normal; }
+        
+        .chart-wrapper { position: relative; height: 260px; width: 100%; min-width: 250px;}
+        
+        .table-standard { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 400px;}
+        .table-standard th { background: #f8f9fa; color: #7f8c8d; padding: 12px 10px; border-bottom: 2px solid #dee2e6; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;}
+        .table-standard td { padding: 12px 10px; border-bottom: 1px solid #e9ecef; color: #2c3e50; font-weight: 500;}
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; white-space: nowrap;}
+        .bg-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .bg-danger { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* Mobile Menu Button */
+        .mobile-menu-btn { display: none; font-size: 24px; background: none; border: none; cursor: pointer; color: #2c3e50; padding: 0; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        /* Filter Bar Styles */
+        .filter-bar { background: white; padding: 12px 25px; border-bottom: 1px solid #dee2e6; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); flex-wrap: wrap; gap: 15px;}
+        .filter-info { font-size: 14px; font-weight: bold; color: #2c3e50; }
+        .filter-form { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 0; }
+        .filter-input { padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; }
+
+        /* ====== MOBILE RESPONSIVENESS ====== */
+        @media (max-width: 992px) { 
+            .data-grids, .data-grids.half { grid-template-columns: 1fr; } 
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+            .sidebar { left: -250px; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; }
+            
+            header { padding: 15px; flex-direction: column; align-items: flex-start; gap: 15px;}
+            header h1 { font-size: 18px; width: 100%; justify-content: flex-start;}
+            .header-right { width: 100%; justify-content: space-between; }
+            .top-logo { height: 30px; margin-right: 5px;}
+            
+            .filter-bar { padding: 15px; flex-direction: column; align-items: flex-start; }
+            .filter-form { width: 100%; flex-direction: column; align-items: stretch;}
+            .filter-form input, .filter-form button, .filter-form a { width: 100%; text-align: center; box-sizing: border-box;}
+            
+            .cards { padding: 0 15px 15px 15px; grid-template-columns: 1fr 1fr; gap: 15px;}
+            .data-grids { padding: 0 15px 15px 15px; gap: 15px;}
+            .section-title { margin: 15px; }
+            .flash-msg, .error-msg { margin: 15px; }
+            
+            .modal-content { width: 95%; padding: 15px; }
+            .chart-wrapper { height: 220px; }
+        }
+
+        @media (max-width: 480px) {
+            .cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="company-logo">
+            <h2>
+                {% if 'Admin' in session.get('role', '') %}
+                    Admin Panel
+                {% elif 'RM' in session.get('role', '') %}
+                    RM Panel
+                {% else %}
+                    Worker Panel
+                {% endif %}
+            </h2>
+        </div>
+        <ul>
+            <li class="active"><a href="/">Dashboard</a></li>
+            
+            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') or 'Receiving' in session.get('role', '') %}
+            <li><a href="/client_supply">RM Input</a></li>
+            {% endif %}
+
+            <li>
+                <a href="/purchase">Purchase & Assets 
+                {% if low_stock_count > 0 and ('Admin' in session.get('role', '') or 'RM' in session.get('role', '')) %}
+                <span style="background: #e74c3c; color: white; border-radius: 50%; padding: 2px 7px; font-size: 11px; margin-left: 5px; font-weight: bold;">{{ low_stock_count }}</span>
+                {% endif %}
+                </a>
+            </li>
+
+            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+            <li><a href="/expenses">Expenses & Analytics</a></li>
+            <li><a href="/workers">Workers</a></li>
+            {% endif %}
+            
+            <li><a href="/production">Production Workflow</a></li>
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/scrap_log">Scrap Log</a></li>
+            {% endif %}
+            
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/audit_log">Audit & Traceability</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="main-content">
+        <header>
+            <h1>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+                    Command Center
+                {% else %}
+                    Worker Dashboard
+                {% endif %}
+            </h1>
+            <div class="header-right">
+                <div class="user-welcome">
+                    <img src="/static/logo/logo.png" alt="MOHATA COAL CO." class="top-logo" onerror="this.style.display='none'">
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('username') }} ▾</button>
+                        <div class="dropdown-content">
+                            <div class="profile-header">Role: {{ session.get('role') }}</div>
+                            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+                            <button onclick="openUsersModal()">Manage Users</button>
+                            {% endif %}
+                            <button onclick="openPasswordModal()">Reset Password</button>
+                            <a href="{{ url_for('auth.logout') }}">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="{% if 'Error' in messages[0] or 'Denied' in messages[0] %}error-msg{% else %}flash-msg{% endif %}">{{ messages[0] }}</div>
+          {% endif %}
+        {% endwith %}
+
+        {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+            <!-- ============================================== -->
+            <!-- ADMIN & RM VIEW: Full Command Center Analytics -->
+            <!-- ============================================== -->
+
+            <!-- Date Filter Bar -->
+            <div class="filter-bar">
+                <div class="filter-info">
+                    {% if request.args.get('start_date') and request.args.get('end_date') %}
+                        Showing Data: <span style="color:#3498db;">{{ request.args.get('start_date') }}</span> to <span style="color:#3498db;">{{ request.args.get('end_date') }}</span>
+                    {% else %}
+                        Showing All-Time Overall Data
+                    {% endif %}
+                </div>
+                <form method="GET" action="/" class="filter-form">
+                    <input type="date" name="start_date" value="{{ request.args.get('start_date', '') }}" required class="filter-input">
+                    <span style="color: #7f8c8d; font-size: 13px;">to</span>
+                    <input type="date" name="end_date" value="{{ request.args.get('end_date', '') }}" required class="filter-input">
+                    <button type="submit" style="background: #3498db; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">Apply Filter</button>
+                    <a href="/" style="background: #95a5a6; color: white; text-decoration: none; padding: 6px 15px; border-radius: 4px; font-weight: bold; font-size: 13px; display: inline-block;">Clear</a>
+                </form>
+            </div>
+
+            <!-- SECTION 1: Factory Operations -->
+            <div class="section-title">Factory Operations & Health</div>
+            <div class="cards">
+                <a href="/client_supply" class="card c-orange" title="Click to view RM details">
+                    <h3>Pending Supply</h3>
+                    <p>{{ pending_supply }}</p>
+                    <small>Batches Waiting</small>
+                </a>
+                <a href="/production" class="card c-blue" title="Click to view live production">
+                    <h3>Active Batches</h3>
+                    <p>{{ active_batches }}</p>
+                    <small>In Pipeline</small>
+                </a>
+                <a href="/production" class="card c-green" title="Click to view delivery logs">
+                    <h3>Delivered Goods</h3>
+                    <p>{{ delivered_batches }}</p>
+                    <small>Completed Orders</small>
+                </a>
+                <a href="/production" class="card c-red" title="Click to view scrap logs">
+                    <h3>Total Scrap Gen.</h3>
+                    <p>{{ total_scrap_kg }}<span style="font-size:16px;">kg</span></p>
+                    <small>Material Loss</small>
+                </a>
+                <a href="/workers" class="card c-purple" title="Click to view workers">
+                    <h3>Present Workers</h3>
+                    <p>{{ workers_present }}</p>
+                    <small>Active Staff</small>
+                </a>
+            </div>
+
+            <div class="data-grids half">
+                <div class="data-box clickable" onclick="window.location.href='/production'">
+                    <h3>Live Production Pipeline <span>Click to view details ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="pipelineBarChart"></canvas></div>
+                </div>
+                
+                <div class="data-box clickable" onclick="window.location.href='/production'">
+                    <h3>Detailed Quality Health <span>Click to view logs ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="qualityPieChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="data-grids half">
+                <div class="data-box clickable" onclick="window.location.href='/workers'">
+                    <h3>Top Workers (Most Work Done) <span>View Worker Profiles ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="workerProdChart"></canvas></div>
+                </div>
+                
+                <!-- NEW: EXACT REQUEST - WORKER-WISE SCRAP (LEFT) -->
+                <div class="data-box clickable" onclick="window.location.href='/scrap_log'">
+                    <h3>Worker-wise Scrap Generation <span>View Scrap Logs ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="workerScrapChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- NEW: SCRAP INVENTORY VS SALES PIE CHART (RIGHT) -->
+            <div class="data-grids half">
+                <div class="data-box clickable" onclick="window.location.href='/scrap_log'">
+                    <h3>Scrap Inventory vs. Sales (Balance) <span>View Scrap Sales ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="scrapInventoryPieChart"></canvas></div>
+                </div>
+                
+                <!-- Financial Breakdown next to Pie Chart -->
+                <div class="data-box clickable" onclick="window.location.href='/expenses'">
+                    <h3>Expenses Breakdown <span>View Analytics ➔</span></h3>
+                    <div class="chart-wrapper"><canvas id="financeBarChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- SECTION 2: Financial Analytics -->
+            <div class="section-title">Financial & Asset Analytics</div>
+            <div class="cards">
+                <a href="/purchase" class="card c-blue">
+                    <h3>Total Purchased</h3>
+                    <p>₹{{ total_purchased }}</p>
+                </a>
+                <a href="/expenses" class="card c-red">
+                    <h3>Asset Consumed</h3>
+                    <p>₹{{ asset_consumed }}</p>
+                </a>
+                <a href="/expenses" class="card c-orange">
+                    <h3>Cash Disbursed</h3>
+                    <p>₹{{ cash_disbursed }}</p>
+                </a>
+                <a href="/purchase" class="card c-teal">
+                    <h3>Warehouse Value</h3>
+                    <p>₹{{ live_warehouse_value }}</p>
+                </a>
+            </div>
+
+            <!-- Tables Section for Analytics -->
+            <div class="data-grids">
+                <div class="data-box clickable" onclick="window.location.href='/workers'">
+                    <h3>Top Expenses (Asset + Cash) <span>Manage Workers ➔</span></h3>
+                    <div style="overflow-x:auto;">
+                        <table class="table-standard">
+                            <thead><tr><th>Worker Name</th><th style="text-align: right;">Total Amount</th></tr></thead>
+                            <tbody>
+                                {% for worker in top_workers %}
+                                <tr>
+                                    <td style="font-weight: bold; color:#2980b9;">{{ worker.name }}</td>
+                                    <td style="text-align: right;"><span class="badge bg-danger">₹{{ worker.total }}</span></td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="2" style="text-align: center; color: #7f8c8d; padding: 20px;">No expenses recorded.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="data-box clickable" onclick="window.location.href='/purchase'">
+                    <h3>Current Inventory Valuation <span>Manage Inventory ➔</span></h3>
+                    <div style="overflow-x:auto;">
+                        <table class="table-standard">
+                            <thead><tr><th>Item Details</th><th>Avg. Cost</th><th style="text-align: right;">Total Value</th></tr></thead>
+                            <tbody>
+                                {% for item in inventory_valuation %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ item.item_name }}</strong><br>
+                                        <span style="font-size: 11px; color: #7f8c8d;">Qty: {{ item.quantity }} Pcs</span>
+                                    </td>
+                                    <td>₹{{ item.avg_cost }}</td>
+                                    <td style="text-align: right; color: #16a085; font-weight: bold;">₹{{ item.total_value }}</td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" style="text-align: center; color: #7f8c8d; padding: 20px;">Warehouse is empty.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- ============================================== -->
+            <!-- WORKER VIEW: Clean & Simple Dashboard -->
+            <!-- ============================================== -->
+            <div style="padding: 50px 20px; text-align: center; max-width: 800px; margin: 0 auto;">
+                <h2 style="color: #2c3e50; font-size: 28px; margin-bottom: 10px;">Welcome to your Dashboard, {{ session.get('username') }}!</h2>
+                <p style="color: #7f8c8d; font-size: 16px; margin-bottom: 40px;">Your designated work stages: <br><strong style="color: #3498db; line-height: 1.8;">{{ session.get('role') }}</strong></p>
+                
+                <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                    <a href="/production" style="background: #27ae60; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s; display: inline-block;">🏭 Go to Production Workflow</a>
+                    <a href="/purchase" style="background: #3498db; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.3s; display: inline-block;">📦 View Asset Stock</a>
+                </div>
+
+                <div style="margin-top: 50px; padding: 20px; background: #fff9e6; border: 1px solid #f1c40f; border-radius: 8px; text-align: left; color: #d35400;">
+                    <h4 style="margin: 0 0 10px 0; font-size: 15px;">📌 Quick Instructions:</h4>
+                    <ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.6; color: #555;">
+                        <li>Navigate to the <strong>Production Workflow</strong> tab to log into your assigned machine.</li>
+                        <li>Update the status of your assigned batches as you complete them.</li>
+                        <li>If you need tools or materials, check the <strong>Purchase & Assets</strong> tab for availability.</li>
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Modals -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; border:none; color: #2c3e50;">System Users Directory</h3>
+                <button class="btn-add-user" onclick="openAddUserModal()">+ Add New User</button>
+            </div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table class="table-clean" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 10px; width: 35%; text-align: left;">Username (ID)</th>
+                            <th style="padding: 10px; width: 45%; text-align: left;">Role/Stage</th>
+                            <th style="padding: 10px; width: 20%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr style="border-bottom: 1px solid #e9ecef;">
+                            <td style="padding: 10px; font-weight: bold; color: #2c3e50; text-align: left;">👤 {{ u.username }}</td>
+                            <td style="padding: 10px; text-align: left;"><span class="badge" style="background:#eef2f7; color:#2980b9; border:1px solid #d5e1ed; white-space:normal; display:inline-block;">{{ u.role }}</span></td>
+                            <td style="padding: 10px; text-align: right;">
+                                <button type="button" onclick="openUserDetails('{{ u.username }}', '{{ u.password }}', '{{ u.role }}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Edit / View</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" class="btn-cancel" onclick="closeUsersModal()">Close</button></div>
+        </div>
+    </div>
+
+    <!-- Edit User Profile & Stages Modal -->
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">✏️ Edit Worker Profile & Stages</h3>
+            <form action="/edit_user" method="POST">
+                <input type="hidden" name="old_username" id="editOldUsername">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Username (ID):</label>
+                <input type="text" name="username" id="editUsername" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Password:</label>
+                <input type="password" name="password" id="editPassword" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px;">Assign Work Stages:</label>
+                <div id="editRolesContainer" style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- JS will inject checkboxes here -->
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeUserDetailsModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="addUserModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3>Add New System User</h3>
+            <form action="/add_user" method="POST">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Select Worker (Registered)</label>
+                <select name="username" required>
+                    <option value="" disabled selected>-- Choose Worker --</option>
+                    {% for w in global_workers %}<option value="{{ w.name }}">{{ w.name }} ({{ w.department or 'General' }})</option>{% endfor %}
+                </select>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Password</label>
+                <input type="password" name="password" required placeholder="Set login password">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Assign Role / Permissions</label>
+                <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Admin" style="width: auto; margin-bottom: 0;"> Master Admin</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="RM" style="width: auto; margin-bottom: 0;"> RM (Quality Check)</label>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Receiving" style="width: auto; margin-bottom: 0;"> Receiving</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 1/Center Drilling" style="width: auto; margin-bottom: 0;"> Facing 1/Center Drilling</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Roughing" style="width: auto; margin-bottom: 0;"> Roughing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Finishing" style="width: auto; margin-bottom: 0;"> Finishing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 2/Drill Tapping" style="width: auto; margin-bottom: 0;"> Facing 2/Drill Tapping</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Final QC (Internal)" style="width: auto; margin-bottom: 0;"> Final QC (Internal)</label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form action="/change_password" method="POST">
+                <label style="font-size: 12px; color: #666;">Current Password</label>
+                <input type="password" name="current_password" required>
+                <label style="font-size: 12px; color: #666;">New Password</label>
+                <input type="password" name="new_password" required>
+                <label style="font-size: 12px; color: #666;">Confirm</label>
+                <input type="password" name="confirm_password" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" style="background: #2c3e50; color: white; border:none;">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Data for JS -->
+    <script id="pipelineLabelsJson" type="application/json">{{ pipeline_labels | tojson | safe }}</script>
+    <script id="pipelineValuesJson" type="application/json">{{ pipeline_values | tojson | safe }}</script>
+    <script id="qualityDataJson" type="application/json">[{{ total_passed }}, {{ total_returned_client }}, {{ total_reworked }}, {{ total_scrapped }}]</script>
+    <script id="workerProdLabelsJson" type="application/json">{{ prod_worker_labels | tojson | safe }}</script>
+    <script id="workerProdValuesJson" type="application/json">{{ prod_worker_values | tojson | safe }}</script>
+    <script id="workerScrapLabelsJson" type="application/json">{{ scrap_worker_labels | tojson | safe }}</script>
+    <script id="workerScrapValuesJson" type="application/json">{{ scrap_worker_values | tojson | safe }}</script>
+    
+    {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+        <script id="financeDataJson" type="application/json">[{{ total_purchased | default(0) }}, {{ asset_consumed | default(0) }}, {{ cash_disbursed | default(0) }}]</script>
+        <script id="workerPieDataJson" type="application/json">{{ top_workers | tojson | safe }}</script>
+        <script id="isAdminJson" type="application/json">true</script>
+    {% else %}
+        <script id="isAdminJson" type="application/json">false</script>
+    {% endif %}
+
+    <!-- External JS Link -->
+    <script src="/static/js/dashboard.js"></script>
+
+    <!-- INLINE SCRIPT FOR NEW CHARTS -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (document.getElementById('isAdminJson').textContent === 'true') {
+                
+                // Scrap Inventory vs Sales Pie Chart
+                var scrapCtx = document.getElementById('scrapInventoryPieChart');
+                if(scrapCtx) {
+                    // Default values so the chart renders even if app.py isn't sending real data yet
+                    let availBalance = {{ current_scrap_balance | default(65) }};
+                    let totalSold = {{ total_scrap_sold | default(35) }};
+                    
+                    new Chart(scrapCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Available Balance (kg)', 'Total Sold (kg)'],
+                            datasets: [{
+                                data: [availBalance, totalSold],
+                                backgroundColor: ['#e67e22', '#27ae60'],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' }
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

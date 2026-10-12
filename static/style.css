@@ -1,0 +1,244 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    display: flex;
+    background-color: #f4f6f9;
+    color: #333;
+}
+
+/* Updated Sidebar for Mobile */
+.sidebar {
+    width: 260px;
+    background-color: #1a2226;
+    color: #fff;
+    height: 100vh;
+    padding: 20px 0;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    z-index: 1001;
+    position: fixed;
+    top: 0;
+    left: 0;
+    transition: left 0.3s ease;
+}
+
+.company-logo {
+    text-align: center;
+    padding: 10px 20px 20px 20px;
+    border-bottom: 1px solid #2c3b41;
+    margin-bottom: 20px;
+    background-color: #fff;
+    margin: 10px;
+    border-radius: 8px;
+}
+
+.company-logo h2 {
+    font-size: 20px;
+    color: #1a2226;
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    border-left: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.sidebar ul li:hover, .sidebar ul li.active {
+    border-left-color: #3c8dbc;
+    background-color: #2c3b41;
+}
+
+.sidebar ul li a {
+    color: #b8c7ce;
+    text-decoration: none;
+    display: block;
+    padding: 15px 20px;
+    font-size: 15px;
+}
+
+.sidebar ul li a:hover {
+    color: #fff;
+}
+
+/* Updated Main Content for Sidebar */
+.main-content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 30px;
+    position: relative;
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+    background-color: rgba(244, 246, 249, 0.92);
+    min-height: 100vh;
+    transition: margin-left 0.3s ease;
+    overflow-y: auto;
+}
+
+header {
+    margin-bottom: 40px;
+    border-bottom: 2px solid #e0e4e8;
+    padding-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    color: #2c3e50;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.top-logo {
+    height: 50px;
+    width: auto;
+}
+
+.logout-btn {
+    padding: 8px 15px;
+    background-color: #e74c3c;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.logout-btn:hover {
+    background-color: #c0392b;
+}
+
+.cards {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 6px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-top: 4px solid #3c8dbc;
+    flex: 1;
+    min-width: 200px;
+    transition: transform 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.card h3 {
+    color: #7f8c8d;
+    margin-bottom: 15px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.card p {
+    font-size: 32px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* =========================================
+   Base Styles for Mobile Elements
+   ========================================= */
+.mobile-menu-btn { 
+    display: none; 
+    font-size: 24px; 
+    background: none; 
+    border: none; 
+    cursor: pointer; 
+    color: #2c3e50; 
+    margin-right: 15px; 
+}
+
+.sidebar-overlay { 
+    display: none; 
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.5); z-index: 1000; 
+}
+
+/* Tables scroll wrapper */
+.table-scroll-container, .table-wrapper, .data-box { overflow-x: auto; }
+.table-clean, .table-standard { min-width: 600px; }
+
+/* =========================================
+   Responsive Design / Media Queries
+   ========================================= */
+@media (max-width: 992px) {
+    .data-grids, .data-grids.half, .grid-2 { 
+        grid-template-columns: 1fr !important; 
+    }
+}
+
+@media (max-width: 768px) {
+    /* Sidebar & Navigation */
+    .mobile-menu-btn { display: inline-block !important; }
+    .sidebar { left: -260px; z-index: 1002; transition: 0.3s ease; }
+    .sidebar.active { left: 0; }
+    .sidebar-overlay.active { display: block; }
+    
+    /* Main Content */
+    .main-content { margin-left: 0 !important; padding: 15px !important; width: 100% !important; }
+    
+    /* Header Adjustments */
+    header { flex-direction: column; align-items: flex-start !important; gap: 15px; padding-bottom: 10px; margin-bottom: 20px; }
+    header h1 { font-size: 20px !important; width: 100%; align-items: center; display: flex; gap: 10px;}
+    .header-right { width: 100% !important; justify-content: space-between !important; }
+    .top-logo { height: 35px !important; margin-right: 5px; }
+
+    /* Modals / Popups */
+    .modal-content { width: 95% !important; padding: 15px !important; max-height: 90vh; }
+    
+    /* Flow map / Pipelines */
+    .flow-map { flex-direction: column; gap: 15px; }
+    .flow-node { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+    .flow-node:not(:last-child)::after { display: none; }
+    
+    /* Table & Container Adjustments */
+    .table-container { padding: 10px !important; margin: 10px 0 !important; border-radius: 6px !important; display: flex !important; flex-direction: column !important; }
+    
+    /* Horizontal Scroll for Tabs & Tables */
+    .tabs, .prof-tabs { overflow-x: auto !important; white-space: nowrap !important; flex-wrap: nowrap !important; border-bottom: none !important; padding-bottom: 5px !important; -webkit-overflow-scrolling: touch; }
+    .tab-content { padding-bottom: 15px !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; width: 100%; }
+    .table-clean, .table-standard { min-width: 650px !important; }
+    
+    /* Filters and Buttons Stacking */
+    .table-controls { flex-direction: column; align-items: stretch !important; gap: 10px; border-bottom: none !important; margin-bottom: 10px !important; }
+    .table-controls > div:last-child { display: flex; flex-direction: column; width: 100%; gap: 8px; }
+    .table-controls > div:last-child button { width: 100% !important; margin: 0 !important; text-align: center; }
+    
+    .btn-add-batch, .btn-add-user { width: 100% !important; box-sizing: border-box !important; text-align: center; margin-bottom: 10px; }
+    
+    /* Search Form and Inputs */
+    form[action="/client_supply"], form[action="/purchase"], form[action="/expenses"], form[action="/audit_log"], .search-box { display: flex !important; flex-direction: column; width: 100%; gap: 8px !important; align-items: stretch !important; }
+    form input[type="text"], form input[type="number"], form input[type="date"], form select, .search-box input, .search-box select { width: 100% !important; box-sizing: border-box !important; margin-left: 0 !important; margin-right: 0 !important;}
+    form button, form a, .search-box button { width: 100% !important; text-align: center; margin: 0 !important;}
+}
+
+@media (max-width: 480px) {
+    .cards { flex-direction: column; }
+    .card { width: 100%; }
+}

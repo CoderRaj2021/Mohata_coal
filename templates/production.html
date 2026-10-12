@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Production Workflow - Mohata Coal Co.</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body, html { height: 100%; margin: 0; overflow-x: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9;}
+        
+        .sidebar { height: 100vh; width: 250px; background: #2c3e50; position: fixed; left: 0; top: 0; z-index: 1001; transition: 0.3s ease; }
+        .main-content { height: 100vh; margin-left: 250px; display: flex; flex-direction: column; box-sizing: border-box; overflow-y: auto; transition: 0.3s ease;}
+        
+        .mobile-menu-btn { display: none; font-size: 24px; background: none; border: none; cursor: pointer; color: #2c3e50; padding: 0; margin-right: 10px; }
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+
+        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 25px; background: white; border-bottom: 1px solid #dee2e6; margin-bottom: 0px;}
+        header h1 { margin: 0; font-size: 22px; color: #2c3e50; display: flex; align-items: center;}
+        .header-right { display: flex; align-items: center; }
+        
+        .user-welcome { display: flex; align-items: center; position: relative; }
+        .top-logo { height: 40px; margin-right: 15px; } 
+        
+        .profile-dropdown { position: relative; display: inline-block; }
+        .profile-btn { background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; }
+        .dropdown-content { display: none; position: absolute; right: 0; background-color: #ffffff; min-width: 180px; box-shadow: 0px 8px 16px rgba(0,0,0,0.2); border-radius: 4px; z-index: 1000; overflow: hidden; text-align: left; top: 100%; margin-top: 5px;}
+        .dropdown-content .profile-header { padding: 10px 15px; background: #f8f9fa; border-bottom: 1px solid #eee; font-weight: bold; color: #2c3e50; font-size: 13px; }
+        .dropdown-content a, .dropdown-content button { color: #333; padding: 10px 15px; text-decoration: none; display: block; width: 100%; background: none; border: none; text-align: left; cursor: pointer; font-size: 14px; }
+        .dropdown-content a:hover, .dropdown-content button:hover { background-color: #f1f1f1; color: #e74c3c; }
+        .profile-dropdown.active .dropdown-content { display: block; }
+
+        .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center; padding: 10px; box-sizing: border-box;}
+        .modal-content { background-color: #fff; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content.large-modal { max-width: 950px; }
+        .modal-content h3 { margin-top: 0; margin-bottom: 15px; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+        .modal-content input[type="text"], .modal-content input[type="number"], .modal-content select, .modal-content input[type="password"] { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box;}
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px; flex-wrap: wrap;}
+        .modal-actions button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; color: white; font-weight: bold;}
+        .btn-cancel { background: #95a5a6; color: white !important; }
+        .btn-add-user { background: #27ae60; padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .flash-msg { background: #d4edda; color: #155724; padding: 10px; margin-bottom: 15px; border-radius: 4px; font-size: 13px; border: 1px solid #c3e6cb; }
+
+        .flow-map { display: flex; align-items: flex-start; justify-content: space-between; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 20px; overflow-x: auto; gap: 5px;}
+        .flow-node { text-align: center; flex: 1; position: relative; padding: 0 5px; min-width: 80px;}
+        .flow-node:not(:last-child)::after { content: '➔'; position: absolute; right: -8px; top: 12px; color: #bdc3c7; font-size: 14px; }
+        .flow-count { font-size: 20px; font-weight: 900; color: #2c3e50; }
+        .flow-count.active { color: #27ae60; }
+        .flow-label { font-size: 10px; color: #7f8c8d; text-transform: uppercase; font-weight: bold; margin-top: 2px; }
+        .flow-batches { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px; }
+        .mini-batch { font-size: 9px; background: #ecf0f1; color: #7f8c8d; padding: 2px 4px; border-radius: 3px; font-weight: bold; border: 1px solid #bdc3c7;}
+        .active-batch { background: #d4edda; color: #155724; border-color: #c3e6cb;}
+
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 15px; }
+        .tab-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; font-size: 15px; font-weight: bold; color: #7f8c8d; border-bottom: 3px solid transparent; white-space: nowrap; flex-shrink: 0;}
+        .tab-btn.active { color: #2c3e50; border-bottom: 3px solid #3498db; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .table-scroll-container { max-height: 400px; overflow-x: auto; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 6px; }
+        .table-clean { width: 100%; text-align: left; border-collapse: collapse; min-width: 600px;}
+        .table-clean th { background: #f8f9fa; border-bottom: 2px solid #dee2e6; padding: 12px 15px; color: #495057; font-size: 12px; text-transform: uppercase; position: sticky; top: 0; z-index: 10; }
+        .table-clean td { border-bottom: 1px solid #e9ecef; padding: 12px 15px; font-size: 13px; color: #333; vertical-align: middle;}
+        
+        .batch-link { color: #2980b9; text-decoration: none; font-weight: bold; font-size: 14px; cursor: pointer; border-bottom: 1px dashed #2980b9;}
+        .batch-link:hover { color: #1c5980; }
+        .stage-badge { background: #ebf5fb; color: #2980b9; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; border: 1px solid #d6eaf8;}
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; white-space: normal; }
+
+        .batch-actions button { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; color: white; margin-right: 5px; margin-top:2px;}
+        .btn-fwd { background: #3498db; }
+        .btn-dlv { background: #8e44ad; }
+
+        .pipeline-stage { border-left: 3px solid #ddd; padding: 0 0 20px 20px; margin-left: 10px; position: relative; }
+        .pipeline-stage:last-child { border-left: 3px solid transparent; }
+        .pipeline-stage::before { content: ""; position: absolute; left: -8px; top: 0; width: 13px; height: 13px; border-radius: 50%; background: #ddd; }
+        .pipeline-stage.completed { border-left-color: #27ae60; }
+        .pipeline-stage.completed::before { background: #27ae60; }
+        .pipeline-stage.current { border-left-color: #ddd; }
+        .pipeline-stage.current::before { background: #3498db; border: 3px solid #d6eaf8; left: -11px; top: -3px;}
+        
+        .stage-title { font-size: 14px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; margin-top: -3px;}
+        .log-entry { background: #f8f9fa; border: 1px solid #eee; padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 12px; }
+        .log-entry span.date { color: #7f8c8d; font-size: 11px; display: block; margin-bottom: 3px;}
+        .log-entry span.user { color: #e67e22; font-weight: bold;}
+
+        /* ====== MACHINE SESSION BOX ====== */
+        .session-box { background: #fff9e6; border: 1px solid #f1c40f; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .session-box h4 { margin: 0; color: #d35400; font-size: 16px; }
+        .session-box p { margin: 5px 0 0 0; color: #7f8c8d; font-size: 13px; }
+        .session-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .session-controls select { padding: 8px; border-radius: 4px; border: 1px solid #f1c40f; outline: none; }
+        .session-btn { background: #e67e22; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .session-btn.logout { background: #c0392b; }
+        
+        .disabled-action { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+
+        .action-btn { padding: 6px 2px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: white; display: inline-block; margin-top: 5px;}
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: inline-block; }
+            .sidebar { left: -250px; position: fixed; z-index: 1001; transition: 0.3s; }
+            .sidebar.active { left: 0; }
+            .sidebar-overlay.active { display: block; }
+            .main-content { margin-left: 0; width: 100%; }
+            header { padding: 15px; flex-direction: column; align-items: flex-start; gap: 15px;}
+            header h1 { font-size: 18px; width: 100%; display: flex; align-items: center;}
+            .header-right { width: 100%; justify-content: space-between; }
+            .top-logo { height: 30px; margin-right: 5px;}
+            .modal-content { width: 95%; padding: 15px; }
+            .tabs { width: 100%; overflow-x: auto; white-space: nowrap; flex-wrap: nowrap; border-bottom: none; display: flex; padding-bottom: 5px; }
+            .flow-map { flex-direction: column; gap: 15px; }
+            .flow-node { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+            .flow-node:not(:last-child)::after { display: none; }
+            .table-controls { flex-direction: column; align-items: flex-start; gap: 10px; width: 100%; overflow: hidden; }
+            .table-controls button:not(.tab-btn) { width: 100%; }
+            .session-box { flex-direction: column; align-items: flex-start; }
+            .session-controls { width: 100%; flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="sidebar">
+        <div class="company-logo">
+            <h2>
+                {% if 'Admin' in session.get('role', '') %}
+                    Admin Panel
+                {% elif 'RM' in session.get('role', '') %}
+                    RM Panel
+                {% else %}
+                    Worker Panel
+                {% endif %}
+            </h2>
+        </div>
+        <ul>
+            <li><a href="/">Dashboard</a></li>
+            
+            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') or 'Receiving' in session.get('role', '') %}
+            <li><a href="/client_supply">RM Input</a></li>
+            {% endif %}
+
+            <li>
+                <a href="/purchase">Purchase & Assets 
+                    {% if low_stock_count > 0 and ('Admin' in session.get('role', '') or 'RM' in session.get('role', '')) %}
+                    <span style="background: #e74c3c; color: white; border-radius: 50%; padding: 3px 8px; font-size: 12px; margin-left: 5px; font-weight: bold;">{{ low_stock_count }}</span>
+                    {% endif %}
+                </a>
+            </li>
+            
+            <!-- RM USER SHOULD NOT SEE EXPENSES MENU -->
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/expenses">Expenses & Analytics</a></li>
+            {% endif %}
+            
+            {% if 'Admin' in session.get('role', '') or 'RM' in session.get('role', '') %}
+            <li><a href="/workers">Workers</a></li>
+            {% endif %}
+            
+            <li class="active"><a href="/production">Production Workflow</a></li>
+            
+            <!-- ADMIN ONLY MENUS -->
+            {% if 'Admin' in session.get('role', '') or 'Store Manager' in session.get('role', '') %}
+            <li><a href="/scrap_log">Scrap Log</a></li>
+            {% endif %}
+            
+            {% if 'Admin' in session.get('role', '') %}
+            <li><a href="/audit_log">Audit & Traceability</a></li>
+            {% endif %}
+        </ul>
+    </div>
+    
+    <div class="main-content" style="background-image: url('/static/logo.png'); background-size: 50%; background-repeat: no-repeat; background-position: center; background-color: rgba(244, 246, 249, 0.95);">
+        <header>
+            <h1>
+                <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                Production Workflow
+            </h1>
+            <div class="header-right">
+                <div class="user-welcome">
+                    <img src="/static/logo/logo.png" alt="Logo" class="top-logo">
+                    <div class="profile-dropdown" id="profileDropdown">
+                        <button class="profile-btn" onclick="toggleDropdown()">👤 {{ session.get('username') }} ▾</button>
+                        <div class="dropdown-content">
+                            <div class="profile-header">Role: {{ session.get('role') }}</div>
+                            <!-- Manage Users Only For Admin -->
+                            {% if 'Admin' in session.get('role', '') %}
+                            <button onclick="openUsersModal()">Manage Users</button>
+                            {% endif %}
+                            <button onclick="openPasswordModal()">Reset Password</button>
+                            <a href="{{ url_for('auth.logout') }}">Logout</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}<div style="margin-bottom: 15px; padding: 0 20px;"><div class="flash-msg">{{ messages[0] }}</div></div>{% endif %}
+        {% endwith %}
+
+        <div style="padding: 0 20px;">
+            <!-- MACHINE SESSION BOX: ONLY FOR WORKERS -->
+            {% if 'Admin' not in session.get('role', '') and 'RM' not in session.get('role', '') and 'Store Manager' not in session.get('role', '') %}
+            <div class="session-box">
+                <div>
+                    <h4>Active Machine Session</h4>
+                    {% if active_machine %}
+                        <p>You are currently logged into <strong>{{ active_machine }}</strong> for <strong style="color:#27ae60;">{{ active_stage }}</strong>.</p>
+                    {% else %}
+                        <p>Please select your stage and machine to start working.</p>
+                    {% endif %}
+                </div>
+                <div class="session-controls">
+                    {% if active_machine %}
+                        <form action="/logout_machine" method="POST" style="margin:0;">
+                            <button type="submit" class="session-btn logout">Logout Machine</button>
+                        </form>
+                    {% else %}
+                        <form action="/set_active_machine" method="POST" style="display:flex; gap:10px; margin:0; flex-wrap:wrap; align-items:center;">
+                            <select name="stage_name" id="sessionStage" required onchange="filterMachinesByStage()">
+                                <option value="" disabled selected>-- Select Stage --</option>
+                                {% for stage in stages %}
+                                    {% if stage not in ['Receiving', 'Delivery', 'RM QC', 'Finish Goods/Inspection (Client)'] %}
+                                        <!-- শুধুমাত্র ওয়ার্কারের নিজের স্টেজগুলোই দেখাবে -->
+                                        {% if stage in session.get('role', '') %}
+                                        <option value="{{ stage }}">{{ stage }}</option>
+                                        {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                            <select name="machine_name" id="sessionMachine" required disabled>
+                                <option value="" disabled selected>-- Select Machine --</option>
+                                <!-- JS injected based on stage -->
+                            </select>
+                            <button type="submit" class="session-btn">Login to Machine</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="flow-map">
+                {% for stage in stages %}
+                <div class="flow-node">
+                    <div class="flow-count {% if batches_by_stage[stage]|length > 0 %}active{% endif %}">{{ batches_by_stage[stage]|length }}</div>
+                    <div class="flow-label">{{ stage }}</div>
+                    <div class="flow-batches">
+                        {% for bn in batches_by_stage[stage] %}
+                            <span class="mini-batch {% if batches_by_stage[stage]|length > 0 %}active-batch{% endif %}" title="Batch #{{ bn }}">#{{ bn }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+                <div class="table-controls" style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #ddd; margin-bottom: 15px;">
+                    <div class="tabs" style="border-bottom: none; margin-bottom: 0;">
+                        <button class="tab-btn active" onclick="openTab(event, 'ActiveTab')">Active Production</button>
+                        <button class="tab-btn" onclick="openTab(event, 'DeliveryTab')">Delivery Queue</button>
+                        <button class="tab-btn" onclick="openTab(event, 'DeliveredTab')">Delivered Batches</button>
+                        <button class="tab-btn" onclick="openTab(event, 'DamagedLogTab')" style="color:#c0392b;">❌ Damaged Log</button>
+                        {% if 'Admin' in session.get('role', '') %}
+                        <button class="tab-btn" onclick="openTab(event, 'MachineSetupTab')" style="color:#e67e22;">⚙️ Machine Setup</button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- RM & STORE MANAGER WILL NOT SEE EXPORT OR PRINT BUTTONS -->
+                    {% if 'RM' not in session.get('role', '') and 'Store Manager' not in session.get('role', '') %}
+                    <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+                        <button onclick="exportCurrentListTabToExcel()" style="background: #27ae60; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📊 Export</button>
+                        <button onclick="printCurrentListTab()" style="background: #2980b9; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨 Print</button>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Active Batches Tab -->
+                <div id="ActiveTab" class="tab-content active">
+                    <div class="table-scroll-container">
+                        <table class="table-clean">
+                            <thead>
+                                <tr>
+                                    <th>Batch No</th>
+                                    <th>Axle No.</th>
+                                    <th>Client</th>
+                                    <th>Qty</th>
+                                    <th>Current Stage</th>
+                                    <th>Last Remark</th>
+                                    <th style="text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for batch in production_batches %}
+                                {% if batch.current_stage != 'Delivery' %}
+                                <tr>
+                                    <td><a class="batch-link" onclick="openPipelineModal('{{ batch.batch_number }}', '{{ batch.current_stage }}')">{{ batch.batch_number }}</a></td>
+                                    
+                                    <td style="font-size: 11px; max-width: 150px; word-wrap: break-word;">
+                                        {% set active_axles = [] %}
+                                        {% if batch.batch_number in pieces_dict %}
+                                            {% for p in pieces_dict[batch.batch_number] %}
+                                                {% if p.status != 'Scrap' and p.status != 'Reject' %}
+                                                    {% set _ = active_axles.append(p.axle_no) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <a class="batch-link" style="color: #2980b9; border-bottom: none; cursor: pointer;" onclick="openPipelineModal('{{ batch.batch_number }}', '{{ batch.current_stage }}')" title="View Axle Status">{{ active_axles | join(', ') }}</a>
+                                        {% else %}
+                                            <span style="color: #95a5a6; font-style: italic;">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    
+                                    <td>
+                                        <strong style="color: #2c3e50;">{{ batch.client_name }}</strong><br>
+                                        <span style="font-size: 11px; color: #7f8c8d;">Inv: {{ batch.invoice_no }}</span>
+                                    </td>
+                                    <td style="font-weight: bold; color: #27ae60;">{{ batch.passed_qty }}</td>
+                                    <td>
+                                        <span class="stage-badge">{{ batch.current_stage }}</span>
+                                        {% if '-R' in batch.batch_number %}
+                                            {% if '[Admin Correction]' in batch.remarks %}
+                                                <br><span style="font-size: 10px; color: #e67e22; font-weight: bold;">(Admin Recovered)</span>
+                                            {% else %}
+                                                <br><span style="font-size: 10px; color: #8e44ad; font-weight: bold;">(Rework Split)</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td style="color: #7f8c8d; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ batch.remarks }}">{{ batch.remarks }}</td>
+                                    <td style="text-align: center;" class="batch-actions">
+                                        <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+                                            
+                                            <!-- ONLY ADMIN OR ASSIGNED STAGE WORKER CAN FORWARD -->
+                                            {% if ('Admin' in session.get('role', '')) or (batch.current_stage in session.get('role', '') and 'RM' not in session.get('role', '') and 'Store Manager' not in session.get('role', '')) %}
+                                                {% set is_disabled = "" %}
+                                                {% set disable_title = "" %}
+                                                
+                                                {% if 'Admin' not in session.get('role', '') %}
+                                                    {% if not active_machine and batch.current_stage not in ['RM QC', 'Final QC (Internal)'] %}
+                                                        {% set is_disabled = "disabled-action" %}
+                                                        {% set disable_title = "Please select a machine first!" %}
+                                                    {% elif active_machine and active_stage != batch.current_stage %}
+                                                        {% set is_disabled = "disabled-action" %}
+                                                        {% set disable_title = "Your machine is set for a different stage!" %}
+                                                    {% endif %}
+                                                {% endif %}
+                                                
+                                                <button class="btn-fwd {{ is_disabled }}" onclick="openForwardModal('{{ batch.batch_number }}', '{{ batch.current_stage }}')" style="background: #3498db;" title="{{ disable_title }}">Forward ➔</button>
+                                            {% else %}
+                                                <span style="font-size: 11px; color: #95a5a6; font-style: italic;">View Only</span>
+                                            {% endif %}
+
+                                            {% if 'Admin' in session.get('role', '') %}
+                                                <button class="action-btn" onclick="openAdminOverrideModal('{{ batch.batch_number }}', '{{ batch.current_stage }}', '{{ batch.status }}')" style="background: #34495e;">⚙ Edit</button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% else %}<tr><td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">No active production batches.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Delivery Tab -->
+                <div id="DeliveryTab" class="tab-content">
+                    <div class="table-scroll-container">
+                        <table class="table-clean">
+                            <thead>
+                                <tr>
+                                    <th>Batch No</th>
+                                    <th>Axle No.</th>
+                                    <th>Client</th>
+                                    <th>Ready Qty</th>
+                                    <th>Stage</th>
+                                    <th style="text-align: center;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for batch in production_batches %}
+                                {% if batch.current_stage == 'Delivery' %}
+                                <tr>
+                                    <td><a class="batch-link" onclick="openPipelineModal('{{ batch.batch_number }}', '{{ batch.current_stage }}')">{{ batch.batch_number }}</a></td>
+                                    
+                                    <td style="font-size: 11px; max-width: 150px; word-wrap: break-word;">
+                                        {% set active_axles = [] %}
+                                        {% if batch.batch_number in pieces_dict %}
+                                            {% for p in pieces_dict[batch.batch_number] %}
+                                                {% if p.status != 'Scrap' and p.status != 'Reject' %}
+                                                    {% set _ = active_axles.append(p.axle_no) %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            <a class="batch-link" style="color: #2980b9; border-bottom: none; cursor: pointer;" onclick="openPipelineModal('{{ batch.batch_number }}', '{{ batch.current_stage }}')" title="View Axle Status">{{ active_axles | join(', ') }}</a>
+                                        {% else %}
+                                            <span style="color: #95a5a6; font-style: italic;">N/A</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        <strong style="color: #2c3e50;">{{ batch.client_name }}</strong><br>
+                                        <span style="font-size: 11px; color: #7f8c8d;">Inv: {{ batch.invoice_no }}</span>
+                                    </td>
+                                    <td style="font-weight: bold; color: #27ae60;">{{ batch.passed_qty }}</td>
+                                    <td>
+                                        <span class="stage-badge" style="background:#fdebd0; border-color:#fad7a1; color:#d35400;">Ready for Delivery</span>
+                                        {% if '-R' in batch.batch_number %}
+                                            {% if '[Admin Correction]' in batch.remarks %}
+                                                <br><span style="font-size: 10px; color: #e67e22; font-weight: bold;">(Admin Recovered)</span>
+                                            {% else %}
+                                                <br><span style="font-size: 10px; color: #8e44ad; font-weight: bold;">(Rework Split)</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </td>
+                                    <td style="text-align: center;" class="batch-actions">
+                                        <div style="display: flex; gap: 5px; justify-content: center; flex-wrap: wrap;">
+                                            {% if 'Admin' in session.get('role', '') %}
+                                                <button class="btn-dlv" onclick="openProcessDeliveryModal('{{ batch.batch_number }}', '{{ batch.passed_qty }}', '{{ batch.client_name }}', '{{ batch.quantity }}')">Process Delivery</button>
+                                            {% else %}
+                                                <span style="font-size: 11px; color: #95a5a6; font-style: italic;">View Only</span>
+                                            {% endif %}
+                                            
+                                            {% if 'Admin' in session.get('role', '') %}
+                                                <button class="action-btn" onclick="openAdminOverrideModal('{{ batch.batch_number }}', '{{ batch.current_stage }}', '{{ batch.status }}')" style="background: #34495e;">⚙️ Edit</button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            {% else %}<tr><td colspan="6" style="text-align: center; padding: 20px; color: #95a5a6;">No batches ready for delivery.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Delivered Batches Tab -->
+                <div id="DeliveredTab" class="tab-content">
+                    <div class="table-scroll-container">
+                        <table class="table-clean">
+                            <thead>
+                                <tr>
+                                    <th>Batch No</th>
+                                    <th>Axle No.</th>
+                                    <th>Client</th>
+                                    <th>Received Qty</th>
+                                    <th>Delivered Qty</th>
+                                    <th>Delivery Time</th>
+                                    <th style="text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for batch in delivered_batches %}
+                            <tr>
+                                <td><a class="batch-link" onclick="openPipelineModal('{{ batch.batch_number }}', 'Delivered')">{{ batch.batch_number }}</a></td>
+                                
+                                <td style="font-size: 11px; max-width: 150px; word-wrap: break-word;">
+                                    {% set active_axles = [] %}
+                                    {% if batch.batch_number in pieces_dict %}
+                                        {% for p in pieces_dict[batch.batch_number] %}
+                                            {% if p.status != 'Scrap' and p.status != 'Reject' %}
+                                                {% set _ = active_axles.append(p.axle_no) %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <a class="batch-link" style="color: #2980b9; border-bottom: none; cursor: pointer;" onclick="openPipelineModal('{{ batch.batch_number }}', 'Delivered')" title="View Axle Status">{{ active_axles | join(', ') }}</a>
+                                    {% else %}
+                                        <span style="color: #95a5a6; font-style: italic;">N/A</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <strong style="color: #2c3e50;">{{ batch.client_name }}</strong><br>
+                                    <span style="font-size: 11px; color: #7f8c8d;">Inv: {{ batch.invoice_no }}</span>
+                                </td>
+                                <td>{{ batch.quantity }}</td>
+                                <td style="font-weight: bold; color: #27ae60;">{{ batch.passed_qty }}</td>
+                                <td>
+                                    {% set b_logs = logs_by_batch.get(batch.batch_number, []) %}
+                                    <span style="font-size: 13px; color: #2c3e50; font-weight: bold;">
+                                        {{ b_logs[-1].timestamp if b_logs else 'N/A' }}
+                                    </span>
+                                </td>
+                                <td style="text-align: center; vertical-align: middle;">
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+                                        <div style="line-height: 1.2;">
+                                            <span class="badge" style="background: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 4px 8px; font-size: 11px;">✓ Delivered</span>
+                                            {% if '-R' in batch.batch_number %}
+                                                <br>
+                                                {% if '[Admin Correction]' in batch.remarks %}
+                                                    <span style="font-size: 9px; color: #e67e22; font-weight: bold;">(Admin Recovered)</span>
+                                                {% else %}
+                                                    <span style="font-size: 9px; color: #8e44ad; font-weight: bold;">(Rework Split)</span>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <div style="display: flex; gap: 5px; justify-content: center;">
+                                            {% if 'RM' not in session.get('role', '') and 'Store Manager' not in session.get('role', '') %}
+                                                {% set challan_remark = b_logs[-1].remark | replace('\n', ' ') | replace('\"', '\\\"') | replace('\'', '\\\'') if b_logs else '' %}
+                                                <button class="action-btn" onclick="openDeliveryChallan('{{ batch.batch_number }}', '{{ batch.client_name }}', '{{ batch.invoice_no }}', '{{ batch.passed_qty }}', '{{ b_logs[-1].timestamp if b_logs else 'N/A' }}', '{{ challan_remark }}')" style="background: #8e44ad; margin: 0; padding: 5px 8px; font-size: 11px;">📄 Challan</button>
+                                            {% endif %}
+                                            
+                                            {% if 'Admin' in session.get('role', '') %}
+                                                <button class="action-btn" onclick="openAdminOverrideModal('{{ batch.batch_number }}', '{{ batch.current_stage }}', '{{ batch.status }}')" style="background: #34495e; margin: 0; padding: 5px 8px; font-size: 11px;">⚙️ Edit</button>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}<tr><td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">No delivered batches yet.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Damaged / Scrapped Log Tab -->
+                <div id="DamagedLogTab" class="tab-content">
+                    <div class="table-scroll-container" style="max-height: 500px;">
+                        <table class="table-clean">
+                            <thead>
+                                <tr>
+                                    <th>Client & Invoice</th>
+                                    <th>Batch No</th>
+                                    <th>Axle No</th>
+                                    <th>Failed Stage</th>
+                                    <th>Damage History before Failure</th>
+                                    <th style="background: #fef9e7; border-left: 2px solid #f1c40f; text-align:center;">Total Scrap/Loss</th>
+                                    <th style="text-align: center;">Final Status & Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for p in damaged_pieces %}
+                            <tr>
+                                <td>
+                                    <strong style="color:#2c3e50;">{{ p.client_name }}</strong><br>
+                                    <span style="font-size:11px; color:#7f8c8d;">Inv: {{ p.invoice_no }} | Rcvd: {{ p.receive_date }}</span>
+                                </td>
+                                <td><a class="batch-link" onclick="openPipelineModal('{{ p.batch_number }}', '{{ p.batch_stage }}')">{{ p.batch_number }}</a></td>
+                                <td style="font-weight:bold; color:#e74c3c; text-align:center;">{{ p.axle_no }}</td>
+                                <td><span class="stage-badge" style="background:#fdebd0; color:#d35400; border-color:#fad7a1;">{{ p.axle_current_stage }}</span></td>
+                                
+                                <td style="font-size:11px;">
+                                    {% set axle_scraps = master_scraps_dict.get(p.batch_number.split('-R')[0], []) | selectattr("axle_no", "equalto", p.axle_no) | list %}
+                                    {% if axle_scraps %}
+                                        <ul style="padding-left: 15px; margin:0; color:#34495e;">
+                                        {% for s in axle_scraps %}
+                                            <li>[{{ s.stage_name }}]: {{ s.reason }}</li>
+                                        {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span style="color:#95a5a6; font-style:italic;">No damage record found.</span>
+                                    {% endif %}
+                                </td>
+                                
+                                <td style="font-weight:bold; color:#e67e22; text-align:center; border-left: 2px solid #f1c40f; background: #fffcf5; vertical-align: middle;">
+                                    {% if p.total_scrap > 0 %}
+                                        {{ p.total_scrap }} kg
+                                    {% else %}
+                                        <span style="color:#95a5a6;">-</span>
+                                    {% endif %}
+                                </td>
+
+                                <td style="text-align: center;">
+                                    {% if p.status == 'Scrap' %}
+                                        <div style="color:#c0392b; font-weight:bold;">❌ Damaged</div>
+                                    {% else %}
+                                        <div style="color:#c0392b; font-weight:bold;">❌ Returned to Client</div>
+                                    {% endif %}
+                                    <div style="color:#7f8c8d; font-size:11px; margin-top:3px;">{{ p.reject_reason }}</div>
+                                    
+                                    {% if 'Admin' in session.get('role', '') %}
+                                        <button class="action-btn" onclick="openAdminOverrideModal('{{ p.batch_number }}', '{{ p.batch_stage }}', 'Scrapped', '{{ p.axle_no }}')" style="background: #34495e; color: white; border: none; margin-top: 5px;">⚙ Recover</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}<tr><td colspan="7" style="text-align: center; padding: 20px; color: #95a5a6;">No damaged or scrapped axles found.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ADMIN ONLY: MACHINE SETUP TAB -->
+                {% if 'Admin' in session.get('role', '') %}
+                <div id="MachineSetupTab" class="tab-content">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #2c3e50;">⚙️ Machine Permissions Management</h3>
+                        <button onclick="openMachineModal('add')" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">+ Add New Machine</button>
+                    </div>
+                    
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <!-- Machines List -->
+                        <div class="table-scroll-container" style="flex: 2; max-height: 500px;">
+                            <table class="table-clean">
+                                <thead>
+                                    <tr>
+                                        <th>Machine Name</th>
+                                        <th>Allowed Stages</th>
+                                        <th style="text-align: center;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for m in machines %}
+                                <tr>
+                                    <td style="font-weight: bold; color: #2c3e50; font-size: 14px;">{{ m.machine_name }}</td>
+                                    <td style="font-size: 12px; color: #34495e; line-height: 1.6;">
+                                        {% set m_stages = m.allowed_stages.split(',') %}
+                                        {% for s in m_stages %}
+                                            <span style="background: #eef2f7; border: 1px solid #d5e1ed; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 3px;">{{ s.strip() }}</span>
+                                        {% endfor %}
+                                    </td>
+                                    <td style="text-align: center;">
+                                        <button onclick='openMachineModal("update", "{{ m.id }}", "{{ m.machine_name }}", {{ m.allowed_stages.split(",") | tojson | safe }})' class="action-btn" style="background: #2980b9;">⚙️ Edit</button>
+                                        <form action="/manage_machines" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this machine?');">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="machine_id" value="{{ m.id }}">
+                                            <button type="submit" class="action-btn" style="background: #c0392b;">🗑️ Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% else %}
+                                <tr><td colspan="3" style="text-align: center; padding: 20px;">No machines found. Please add some.</td></tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Live Worker Activity Logs -->
+                        <div style="flex: 1; min-width: 300px;">
+                            <div style="background: #fdfdfd; border: 1px solid #e9ecef; border-radius: 8px; overflow: hidden;">
+                                <div style="background: #34495e; color: white; padding: 10px 15px; font-weight: bold; font-size: 14px;">Live Worker Logins</div>
+                                <div style="max-height: 450px; overflow-y: auto; padding: 10px;">
+                                    {% for log in machine_logs %}
+                                        <div style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+                                            <div style="font-size: 12px; color: #7f8c8d; margin-bottom: 3px;">{{ log.login_time }}</div>
+                                            <div style="font-size: 13px; color: #2c3e50;"><strong>👤 {{ log.worker_name }}</strong> logged into <strong>{{ log.machine_name }}</strong> for <span style="color: #27ae60; font-weight: bold;">{{ log.stage_name }}</span>.</div>
+                                            {% if log.logout_time %}
+                                                <div style="font-size: 11px; color: #c0392b; margin-top: 3px;">Logged out at: {{ log.logout_time }}</div>
+                                            {% else %}
+                                                <div style="font-size: 11px; color: #27ae60; margin-top: 3px; font-weight: bold;">Currently Active 🟢</div>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <div style="text-align: center; color: #95a5a6; padding: 20px; font-size: 12px;">No login activity yet.</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    
+    <!-- Machine Add/Edit Modal (ADMIN) -->
+    <div id="machineModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 id="machineModalTitle">Add New Machine</h3>
+            <form action="/manage_machines" method="POST">
+                <input type="hidden" name="action" id="machineAction" value="add">
+                <input type="hidden" name="machine_id" id="machineId">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Machine Name (e.g., CNC Rough 1):</label>
+                <input type="text" name="machine_name" id="machineName" required placeholder="Enter machine name...">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; margin-top: 10px; display: block; margin-bottom: 8px;">Allowed Stages (Check all that apply):</label>
+                <div style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 250px; overflow-y: auto;">
+                    {% for stage in stages %}
+                        {% if stage not in ['Receiving', 'Delivery', 'RM QC', 'Finish Goods/Inspection (Client)'] %}
+                        <label style="display: block; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #34495e;">
+                            <input type="checkbox" name="allowed_stages[]" value="{{ stage }}" class="machine-stage-checkbox" style="width: auto; margin-right: 8px; margin-bottom: 0;"> {{ stage }}
+                        </label>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 20px;">
+                    <button type="button" class="btn-cancel" onclick="closeModal('machineModal')">Cancel</button>
+                    <button type="submit" style="background: #27ae60;">Save Machine</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- UNIVERSAL EVALUATION MODAL -->
+    <div id="forwardModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h3 id="forwardModalTitle">Evaluate & Forward</h3>
+            <form action="/production" method="POST">
+                <input type="hidden" name="action" value="evaluate_and_forward">
+                <input type="hidden" name="batch_number" id="fwdBatchNumber">
+                <input type="hidden" name="current_stage" id="fwdCurrentStage">
+                
+                <div style="background: #eef2f7; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 15px; color: #2c3e50; display: flex; justify-content: space-between; align-items: center;">
+                    <span>Mark the quality status for each Axle.</span>
+                    <button type="button" onclick="selectAllPass()" style="background: #27ae60; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold;">Select All Pass ✅</button>
+                </div>
+                
+                <div style="border: 1px solid #ddd; border-radius: 4px; margin-bottom: 15px;">
+                    <div id="evalPiecesContainer" style="max-height: 300px; overflow-y: auto; overflow-x: hidden;">
+                        <!-- JS injected Evaluation table -->
+                    </div>
+                </div>
+
+                <label style="font-size: 12px; color: #666; font-weight: bold;">Forward Remark (Optional):</label>
+                <input type="text" name="remark" placeholder="e.g. Processed successfully..." style="margin-top: 5px;">
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('forwardModal')">Cancel</button>
+                    <button type="submit" style="background: #3498db;">Submit Evaluation & Forward ➔</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Process Delivery Modal & Logistics -->
+    <div id="processDeliveryModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h3>Process Delivery & Generate Challan</h3>
+            <form action="/production" method="POST" onsubmit="formatDeliveryRemark(event, this)">
+                <input type="hidden" name="action" value="process_delivery">
+                <input type="hidden" name="batch_number" id="delBatchNumber">
+                <input type="hidden" name="remark" id="hidden_final_remark">
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Batch No:</label>
+                        <input type="text" id="delBatchLabel" disabled style="background:#f1f1f1;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Client Name (Billed To):</label>
+                        <input type="text" name="manual_client" id="delClientName" required placeholder="Enter client name" style="background:#fff; border: 1px solid #ccc;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #666;">Total Rcvd Qty:</label>
+                        <input type="text" id="delRcvQty" disabled style="background:#f1f1f1;">
+                    </div>
+                    <div>
+                        <label style="font-size: 12px; font-weight: bold; color: #27ae60;">Ready Delivery Qty:</label>
+                        <input type="number" name="del_qty" id="delQty" required readonly style="background:#e8f8f5; border: 1px solid #27ae60;">
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 style="margin-top: 0; color: #2c3e50; font-size: 13px; border-bottom: 1px solid #ddd; padding-bottom: 5px;">🚚 Logistics & Transport Details</h4>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <label style="font-size: 12px; font-weight: bold; color: #666;">Dispatch From:</label>
+                            <input type="text" name="dispatch_from" value="Mohata Coal Co. Pvt. Ltd. (Factory)" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: bold; color: #666;">Delivery To (Destination):</label>
+                            <input type="text" name="delivery_to" id="delDestination" required>
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: bold; color: #666;">Vehicle No:</label>
+                            <input type="text" name="del_vehicle" required placeholder="e.g. WB-XX-XXXX">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: bold; color: #666;">Driver Name:</label>
+                            <input type="text" name="driver_name" placeholder="Enter driver name">
+                        </div>
+                    </div>
+                </div>
+                
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Authorized By (User):</label>
+                <input type="text" name="delivered_by" value="{{ username }}" readonly style="background: #f1f1f1; cursor: not-allowed;" required>
+                
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Additional Note (Optional):</label>
+                <input type="text" name="actual_remark" placeholder="Type final note before dispatch...">
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('processDeliveryModal')">Cancel</button>
+                    <button type="submit" style="background: #8e44ad;">Dispatch & Confirm Delivery</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Timeline Modal with Tabs & Print Button -->
+    <div id="pipelineModal" class="modal">
+        <div class="modal-content large-modal">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3 id="pipelineModalTitle" style="margin: 0; border: none; padding: 0;">Batch Timeline & Summary</h3>
+                
+                {% if 'RM' not in session.get('role', '') and 'Store Manager' not in session.get('role', '') %}
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="exportMasterViewToExcel()" style="background: #27ae60; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📊 Export Excel</button>
+                    <button type="button" onclick="printMasterView()" style="background: #2980b9; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🖨️ Print A4 Report</button>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div id="batchSummaryBox" style="background: #f8f9fa; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #dee2e6; font-size: 13px;"></div>
+            
+            <div class="tabs" style="margin-bottom: 15px;">
+                <button class="tab-btn active" onclick="switchPipelineTab(event, 'timelineTab')">Stage Timeline</button>
+                <button class="tab-btn" onclick="switchPipelineTab(event, 'masterViewTab')">Master Axle View (Traceability)</button>
+            </div>
+
+            <div id="timelineTab" class="pipeline-tab-content" style="display:block;">
+                <div id="pipelineContainer"></div>
+            </div>
+            
+            <div id="masterViewTab" class="pipeline-tab-content" style="display:none;">
+                <div id="axleMasterViewContainer"></div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 20px;"><button class="btn-cancel" onclick="closeModal('pipelineModal')">Close Window</button></div>
+        </div>
+    </div>
+
+    <!-- ADMIN MASTER OVERRIDE MODAL (GOD MODE) -->
+    <div id="adminOverrideModal" class="modal">
+        <div class="modal-content" style="max-width: 800px; z-index: 3000;">
+            <h3 style="color: #2c3e50; border-bottom: 2px solid #34495e;">⚙️ Master Edit / Override (God Mode)</h3>
+            <p style="font-size: 12px; color: #e74c3c; margin-top: -10px; margin-bottom: 15px;">Forcefully correct worker mistakes. You can change the status of any axle (e.g., from Scrapped back to Pass) and correct stages.</p>
+            <form action="/production" method="POST">
+                <input type="hidden" name="action" value="admin_override">
+                <input type="hidden" name="batch_number" id="overrideBatchNumber">
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Override Batch Stage:</label>
+                        <select name="override_batch_stage" id="overrideBatchStage" required style="background:#fff; border: 1px solid #ccc; width: 100%; padding: 8px; border-radius: 4px;">
+                            <!-- populated by JS -->
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Override Batch Status:</label>
+                        <select name="override_batch_status" id="overrideBatchStatus" required style="background:#fff; border: 1px solid #ccc; width: 100%; padding: 8px; border-radius: 4px;">
+                            <option value="Approved">Approved (Production)</option>
+                            <option value="Return to RM QC">Return to RM QC</option>
+                            <option value="Pending">Pending (Return to Receiving)</option>
+                            <option value="Scrapped">Scrapped</option>
+                            <option value="Delivered">Delivered</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="background: #eef2f7; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 10px; color: #2c3e50; font-weight: bold;">
+                    Axle Status Override Panel
+                </div>
+
+                <div style="border: 1px solid #ddd; border-radius: 4px; overflow: hidden; margin-bottom: 15px;">
+                    <div id="overrideAxleInputsContainer" style="max-height: 350px; overflow-y: auto; overflow-x: auto;">
+                        <!-- JS injected table -->
+                    </div>
+                </div>
+
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Reason for Override (Optional):</label>
+                <input type="text" name="override_remark" placeholder="e.g. Corrected worker mistake, reverting reject to pass..." style="width: 100%; padding: 8px; margin-bottom: 15px;">
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal('adminOverrideModal')">Cancel</button>
+                    <button type="submit" style="background: #e67e22; color: white; border: none;">Override & Save All Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- NEW: Delivery Challan Print Modal -->
+    <div id="deliveryChallanModal" class="modal">
+        <div class="modal-content" style="max-width: 650px; padding: 0; overflow: hidden; z-index: 3000;">
+            <div style="background: #2c3e50; color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0; border: none; color: white; padding: 0;">📄 Delivery Challan Preview</h3>
+                <button onclick="closeDeliveryChallanModal()" style="background: none; border: none; color: white; font-size: 20px; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div id="deliveryChallanBody" style="padding: 20px; max-height: 70vh; overflow-y: auto;">
+                <!-- JS will inject challan here -->
+            </div>
+            
+            <div class="modal-actions" style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #eee; margin: 0; display: flex; gap: 10px;">
+                <button type="button" onclick="printDeliveryChallan()" style="flex: 1; background: #27ae60; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 14px;">🖨️ Print Challan (A4)</button>
+                <button type="button" class="btn-cancel" onclick="closeDeliveryChallanModal()" style="flex: 1;">Close Window</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3>Reset Password</h3>
+            <form action="/change_password" method="POST">
+                <label style="font-size: 12px; color: #666;">Current Password</label>
+                <input type="password" name="current_password" required>
+                <label style="font-size: 12px; color: #666;">New Password</label>
+                <input type="password" name="new_password" required>
+                <label style="font-size: 12px; color: #666;">Confirm</label>
+                <input type="password" name="confirm_password" required>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closePasswordModal()">Cancel</button>
+                    <button type="submit" style="background: #2c3e50; color: white; border:none;">Reset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Users Management Modals -->
+    <div id="usersModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin:0; border:none; color: #2c3e50;">System Users Directory</h3>
+                <button class="btn-add-user" onclick="openAddUserModal()">+ Add New User</button>
+            </div>
+            <div style="max-height: 350px; overflow-y: auto;">
+                <table class="table-clean" style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                            <th style="padding: 10px; width: 35%; text-align: left;">Username (ID)</th>
+                            <th style="padding: 10px; width: 45%; text-align: left;">Role/Stage</th>
+                            <th style="padding: 10px; width: 20%; text-align: right;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in all_users %}
+                        <tr style="border-bottom: 1px solid #e9ecef;">
+                            <td style="padding: 10px; font-weight: bold; color: #2c3e50; text-align: left;">👤 {{ u.username }}</td>
+                            <td style="padding: 10px; text-align: left;"><span class="badge" style="background:#eef2f7; color:#2980b9; border:1px solid #d5e1ed; white-space:normal; display:inline-block;">{{ u.role }}</span></td>
+                            <td style="padding: 10px; text-align: right;">
+                                <button type="button" onclick="openUserDetails('{{ u.username }}', '{{ u.password }}', '{{ u.role }}')" style="background: #3498db; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold;">Edit / View</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-actions" style="margin-top: 20px;"><button type="button" class="btn-cancel" onclick="closeUsersModal()">Close</button></div>
+        </div>
+    </div>
+
+    <div id="userDetailsModal" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px;">✏️ Edit Worker Profile & Stages</h3>
+            <form action="/edit_user" method="POST">
+                <input type="hidden" name="old_username" id="editOldUsername">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Username (ID):</label>
+                <input type="text" name="username" id="editUsername" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50;">Password:</label>
+                <input type="password" name="password" id="editPassword" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                
+                <label style="font-size: 12px; font-weight: bold; color: #2c3e50; display: block; margin-bottom: 8px;">Assign Work Stages:</label>
+                <div id="editRolesContainer" style="background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 4px; max-height: 200px; overflow-y: auto;">
+                    <!-- JS will inject checkboxes here -->
+                </div>
+                
+                <div class="modal-actions" style="margin-top: 15px;">
+                    <button type="button" class="btn-cancel" onclick="closeUserDetailsModal()">Cancel</button>
+                    <button type="submit" style="background: #27ae60; color: white; border: none; padding: 8px 15px; border-radius: 4px; font-weight: bold; cursor: pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add New System User Modal -->
+    <div id="addUserModal" class="modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <h3>Add New System User</h3>
+            <form action="/add_user" method="POST">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Select Worker (Registered)</label>
+                <select name="username" required style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                    <option value="" disabled selected>-- Choose Worker --</option>
+                    {% for w in global_workers %}<option value="{{ w.name }}">{{ w.name }} ({{ w.department or 'General' }})</option>{% endfor %}
+                </select>
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Password</label>
+                <input type="password" name="password" required placeholder="Set login password" style="width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="font-size: 12px; font-weight: bold; color: #666;">Assign Role / Permissions</label>
+                <div style="background: #f8f9fa; padding: 12px 15px; border-radius: 6px; border: 1px solid #ddd; margin-bottom: 15px; max-height: 200px; overflow-y: auto;">
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Admin" style="width: auto; margin-bottom: 0;"> Master Admin</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="RM" style="width: auto; margin-bottom: 0;"> RM (Quality Check)</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Store Manager" style="width: auto; margin-bottom: 0;"> Store Manager</label>
+                        <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Receiving" style="width: auto; margin-bottom: 0;"> Receiving</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 1/Center Drilling" style="width: auto; margin-bottom: 0;"> Facing 1/Center Drilling</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Roughing" style="width: auto; margin-bottom: 0;"> Roughing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Finishing" style="width: auto; margin-bottom: 0;"> Finishing</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Facing 2/Drill Tapping" style="width: auto; margin-bottom: 0;"> Facing 2/Drill Tapping</label>
+                        <label style="font-size: 13px; color: #333; display: flex; align-items: center; gap: 10px; cursor: pointer;"><input type="checkbox" name="permissions" value="Final QC (Internal)" style="width: auto; margin-bottom: 0;"> Final QC (Internal)</label>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddUserModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Data for JS -->
+    <script id="batchLogsJson" type="application/json">{{ logs_by_batch | tojson | safe }}</script>
+    <script id="workflowStagesJson" type="application/json">{{ stages | tojson | safe }}</script>
+    <script id="batchesDictJson" type="application/json">{{ batches_dict | tojson | safe }}</script>
+    <script id="piecesDictJson" type="application/json">{{ pieces_dict | tojson | safe }}</script>
+    <script id="masterPiecesDictJson" type="application/json">{{ master_pieces_dict | tojson | safe }}</script>
+    <script id="masterScrapsDictJson" type="application/json">{{ master_scraps_dict | tojson | safe }}</script>
+    <script id="machinesDictJson" type="application/json">{{ machines | tojson | safe }}</script>
+    <script id="currentUsernameJson" type="application/json">"{{ session.get('username') }}"</script>
+
+    <!-- External JS Link -->
+    <script src="/static/js/production.js"></script>
+
+    <!-- Script to support Store Manager in Edit Modal -->
+    <script>
+        function openUserDetails(username, password, role) {
+            closeUsersModal();
+            document.getElementById('editOldUsername').value = username;
+            document.getElementById('editUsername').value = username;
+            document.getElementById('editPassword').value = password;
+            
+            let userRoles = role ? role.split(',').map(r => r.trim()) : [];
+            let stagesList = ["Receiving", "Facing 1/Center Drilling", "Roughing", "Finishing", "Facing 2/Drill Tapping", "Final QC (Internal)"];
+            
+            let rolesHtml = `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #d35400;">
+                    <input type="checkbox" name="permissions" value="Admin" ${userRoles.includes('Admin') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Master Admin
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-weight: bold; color: #27ae60;">
+                    <input type="checkbox" name="permissions" value="RM" ${userRoles.includes('RM') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> RM (Quality Check)
+                </label>
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; color: #333; font-size: 13px;">
+                    <input type="checkbox" name="permissions" value="Store Manager" ${userRoles.includes('Store Manager') ? 'checked' : ''} style="width: auto; margin-right: 8px;"> Store Manager
+                </label>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 15px 0;">
+                <div style="font-size: 11px; color: #7f8c8d; margin-bottom: 10px; text-transform: uppercase; font-weight: bold;">Production Stages</div>
+            `;
+            
+            stagesList.forEach(stage => {
+                rolesHtml += `
+                <label style="display: block; margin-bottom: 8px; cursor: pointer; font-size: 13px; color: #333;">
+                    <input type="checkbox" name="permissions" value="${stage}" ${userRoles.includes(stage) ? 'checked' : ''} style="width: auto; margin-right: 8px;"> ${stage}
+                </label>`;
+            });
+            
+            document.getElementById('editRolesContainer').innerHTML = rolesHtml;
+            document.getElementById('userDetailsModal').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
